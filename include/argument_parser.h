@@ -5,6 +5,8 @@
  */
 #include <functional>
 #include <string>
+#include <unordered_set>
+#include <vector>
 
 namespace argparse {
 
@@ -90,6 +92,81 @@ template<> float ArgValue::value() const {
 template<> double ArgValue::value() const {
     return safeStrTo<double>(strtod, "double");
 }
+
+
+
+/******************
+ * Argument parser.
+ ******************/
+
+class ArgumentParser {
+protected:
+    /**
+     * Argument, including both the properties and the argument values.
+     */
+    class Argument {
+    public:
+        Argument(const std::string& name, const bool required, const std::string& defaultValue,
+                const std::vector<std::string>& choices, const size_t expectCount, const std::string& help)
+            : name_(name), required_(required), defaultValue_(defaultValue),
+              choices_(choices.begin(), choices.end()), expectCount_(expectCount), help_(help)
+        {
+            // Nothing else to do.
+        }
+
+        std::string name() const { return name_; }
+        bool required() const { return required_; }
+        std::string defaultValue() const { return defaultValue_; }
+        size_t expectCount() const { return expectCount_; }
+        std::string help() const { return help_; }
+
+        bool isChoice(const std::string& value) const {
+            return choices_.empty() || choices_.count(value) != 0;
+        }
+
+        /**
+         * Whether this option is given in the command line.
+         */
+        bool given() const { return given_; }
+        void givenIs(bool given) { given_ = given; }
+
+        /**
+         * Argument value in the command line that is associated with this option.
+         */
+        const ArgValue argValue(const size_t idx) const {
+            if (idx >= argValueList_.size()) {
+                return ArgValue("");
+            }
+            return argValueList_[idx];
+        }
+
+        const size_t argValueCount() const {
+            return argValueList_.size();
+        }
+
+        void argValueNew(const std::string& arg) {
+            argValueList_.push_back(ArgValue(arg));
+        }
+
+        void argValueDelAll() {
+            argValueList_.clear();
+        }
+
+    protected:
+        /* Properties. */
+        std::string name_;
+        bool required_;
+        std::string defaultValue_;
+        std::unordered_set<std::string> choices_;
+        size_t expectCount_;
+        std::string help_;
+
+        /* Argument values. */
+        bool given_;
+        std::vector<ArgValue> argValueList_;
+    };
+
+};
 
 } // namespace argparse
 
