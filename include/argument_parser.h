@@ -29,20 +29,36 @@ protected:
 
 class ArgValueException : public std::exception {
 public:
-    explicit ArgValueException(const std::string& str) : str_(str) {}
+    ArgValueException(const std::string& val, const std::string& arg)
+        : val_(val), arg_(arg)
+    {
+        // Nothing else to do.
+    }
     virtual ~ArgValueException() {}
-    const char* what() const throw() { return str_.c_str(); }
+    const char* what() const throw() {
+        auto str = val_ + ":->:" + arg_;
+        return str.c_str();
+    }
 protected:
-    std::string str_;
+    std::string val_;
+    std::string arg_;
 };
 
 class ArgTypeException : public std::exception {
 public:
-    explicit ArgTypeException(const std::string& str) : str_(str) {}
+    ArgTypeException(const std::string& val, const std::string& type)
+        : val_(val), type_(type)
+    {
+        // Nothing else to do.
+    }
     virtual ~ArgTypeException() {}
-    const char* what() const throw() { return str_.c_str(); }
+    const char* what() const throw() {
+        auto str = val_ + ":->:" + type_;
+        return str.c_str();
+    }
 protected:
-    std::string str_;
+    std::string val_;
+    std::string type_;
 };
 
 
@@ -80,7 +96,9 @@ protected:
     inline T safeStrTo(std::function<T(const char*, char**)> strto, const char* typeName) const {
         char* end = nullptr; errno = 0;
         auto v = strto(str_.c_str(), &end);
-        if (str_.empty() || *end != '\0' || errno == ERANGE) throw ArgTypeException(typeName);
+        if (str_.empty() || *end != '\0' || errno == ERANGE) {
+            throw ArgTypeException(str_, typeName);
+        }
         return v;
     }
 };
@@ -133,7 +151,7 @@ protected:
               choices_(choices.begin(), choices.end()), expectCount_(expectCount), help_(help)
         {
             if (!isChoice(defaultValue_)) {
-                throw ArgValueException(defaultValue_ + " -> " + name_ + " by default");
+                throw ArgValueException(defaultValue_, name_);
             }
         }
 
@@ -342,7 +360,7 @@ void ArgumentParser::cmdlineIs(int argc, char* argv[]) {
             for (size_t i = 0; i < arg->expectCount(); i++, argi++) {
                 if (argi >= argc || isFlag(argv[argi])) break;
                 if (!arg->isChoice(argv[argi])) {
-                    throw ArgValueException(std::string(argv[argi]) + " -> " + arg->name());
+                    throw ArgValueException(std::string(argv[argi]), arg->name());
                 }
                 arg->argValueNew(argv[argi]);
             }
