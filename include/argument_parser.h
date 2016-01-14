@@ -270,6 +270,22 @@ protected:
         }
     }
 
+    void checkArgument(const std::shared_ptr<Argument>& arg) {
+        if (arg->required()) {
+            // Expected value count must be given for required argument.
+            if (!arg->given() || arg->argValueCount() != arg->expectCount()) {
+                throw ArgKeyException(arg->name());
+            }
+        } else {
+            if (arg->expectCount() != -1uL) {
+                // If not required, use default values to fill in the blank.
+                for (auto idx = arg->argValueCount(); idx < arg->expectCount(); idx++) {
+                    arg->argValueNew(arg->defaultValue());
+                }
+            }
+        }
+    }
+
     std::shared_ptr<Argument> argument(const std::string& key) const {
         auto iter = optionMap_.find(key);
         if (iter == optionMap_.end()) {
@@ -376,7 +392,19 @@ void ArgumentParser::cmdlineIs(int argc, char* argv[]) {
         throw;
     }
 
-    //TODO: do check.
+    // Check whether required arguments and expected value counts are given.
+    try {
+        for (auto& arg : positionalArgList_) {
+            checkArgument(arg);
+        }
+        for (auto& kv : optionMap_) {
+            checkArgument(kv.second);
+        }
+    } catch (ArgKeyException& e) {
+        std::cerr << "Required argument is not given or too few values: " << e.what() << std::endl;
+        std::cerr << help() << std::endl;
+        throw;
+    }
 }
 
 } // namespace argparse
