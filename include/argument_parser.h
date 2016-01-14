@@ -352,7 +352,7 @@ void ArgumentParser::argumentNew(const std::string& name, const bool required, c
 
 void ArgumentParser::cmdlineIs(int argc, char* argv[]) {
     reset();
-    if (argc <= 1) return;
+
     // Skip program name.
     argc -= 1;
     argv += 1;
