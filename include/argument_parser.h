@@ -4,7 +4,10 @@
  * A simple command line argument/option parser.
  */
 #include <functional>
+#include <memory>
+#include <sstream>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -14,6 +17,15 @@ namespace argparse {
 /***********************
  * Exception definition.
  ***********************/
+
+class ArgKeyException : public std::exception {
+public:
+    explicit ArgKeyException(const std::string& key) : key_(key) {}
+    virtual ~ArgKeyException() {}
+    const char* what() const throw() { return key_.c_str(); }
+protected:
+    std::string key_;
+};
 
 class ArgTypeException : public std::exception {
 public:
@@ -140,7 +152,7 @@ protected:
             return argValueList_[idx];
         }
 
-        const size_t argValueCount() const {
+        size_t argValueCount() const {
             return argValueList_.size();
         }
 
@@ -166,7 +178,164 @@ protected:
         std::vector<ArgValue> argValueList_;
     };
 
+public:
+    ArgumentParser()
+        : positionalArgList_(), optionMap_()
+    {
+        // Nothing else to do.
+    }
+
+    const std::string help() const {
+        return "TODO\n";
+    }
+
+    /* Generic argument access. */
+
+    template<typename KeyT>
+    size_t argValueCount(const KeyT& key) const {
+        auto arg = argument(key);
+        if (arg == nullptr) return 0;
+        return arg->argValueCount();
+    }
+
+    template<typename T, typename KeyT>
+    const T argValue(const KeyT& key, const size_t valueIdx = 0) const {
+        auto arg = argument(key);
+        if (arg == nullptr) throw ArgKeyException(strKey(key));
+        return arg->argValue(valueIdx).template value<T>();
+    }
+
+    /* Positional argument. */
+
+    size_t positionalArgCount() const {
+        return positionalArgList_.size();
+    }
+
+    /* Option/flag. */
+
+    bool optionGiven(const std::string& key) const {
+        auto arg = argument(key);
+        if (arg == nullptr) throw ArgKeyException(strKey(key));
+        return arg->given();
+    }
+
+
+    template<typename T>
+    void argumentNew(const std::string& name, const bool required, const T& defaultValue,
+            const std::vector<T>& choices, const std::string& help,
+            const size_t expectCount, const std::initializer_list<std::string>& aliases);
+
+    void cmdlineIs(int argc, char* argv[]);
+
+protected:
+    std::vector<std::shared_ptr<Argument>> positionalArgList_;
+    std::unordered_map<std::string, std::shared_ptr<Argument>> optionMap_;
+
+protected:
+    void reset() {
+        for (auto& pa : positionalArgList_) {
+            pa->argValueDelAll();
+        }
+        for (auto& kv : optionMap_) {
+            kv.second->argValueDelAll();
+        }
+    }
+
+    std::shared_ptr<Argument> argument(const std::string& key) const {
+        auto iter = optionMap_.find(key);
+        if (iter == optionMap_.end()) {
+            return nullptr;
+        }
+        return iter->second;
+    }
+
+    std::shared_ptr<Argument> argument(const size_t& idx) const {
+        if (idx >= positionalArgList_.size()) {
+            return nullptr;
+        }
+        return positionalArgList_[idx];
+    }
+
+    static std::string strKey(const std::string& key) { return key; }
+
+    static std::string strKey(const size_t& idx) { return "@" + std::to_string(idx); }
+
+    static bool isFlag(const std::string& key) {
+        return key.compare(0, 1, "-") == 0 || key.compare(0, 2, "--") == 0;
+    }
+
 };
+
+
+template<typename T>
+void ArgumentParser::argumentNew(const std::string& name, const bool required, const T& defaultValue,
+        const std::vector<T>& choices, const std::string& help,
+        const size_t expectCount, const std::initializer_list<std::string>& aliases) {
+
+    // Convert all types (including string and char[]) to string.
+    // \c std::to_string only works for numeric types.
+    auto allToString = [](const T& var) {
+        std::stringstream ss;
+        ss << var;
+        return ss.str();
+    };
+
+    auto strDefaultValue = allToString(defaultValue);
+    std::vector<std::string> strChoices;
+    for (const auto& c : choices) {
+        strChoices.push_back(allToString(c));
+    }
+
+    auto ptr = std::make_shared<Argument>(
+            name, required, strDefaultValue, strChoices, expectCount, help);
+
+    if (isFlag(name)) {
+        optionMap_[name] = ptr;
+        for (const auto& a : aliases) {
+            optionMap_[a] = ptr;
+        }
+    } else {
+        positionalArgList_.push_back(ptr);
+    }
+}
+
+void ArgumentParser::cmdlineIs(int argc, char* argv[]) {
+    reset();
+    if (argc <= 1) return;
+    // Skip program name.
+    argc -= 1;
+    argv += 1;
+
+    try {
+        int argi = 0;
+        size_t posArgIdx = 0;
+        while (argi < argc) {
+            std::shared_ptr<Argument> arg = nullptr;
+            if (isFlag(argv[argi])) {
+                std::string key = argv[argi];
+                arg = argument(key);
+                if (arg == nullptr) throw ArgKeyException(strKey(key));
+                argi++;
+            } else {
+                arg = argument(posArgIdx);
+                if (arg == nullptr) throw ArgKeyException(strKey(posArgIdx));
+                posArgIdx++;
+            }
+
+            for (size_t i = 0; i < arg->expectCount(); i++, argi++) {
+                if (argi >= argc || isFlag(argv[argi])) break;
+                arg->argValueNew(argv[argi]);
+                arg->givenIs(true);
+            }
+        }
+    } catch (ArgKeyException& e) {
+        std::cerr << "Unrecognized option or too many positional arguments: " << e.what() << std::endl;
+        std::cerr << help() << std::endl;
+        throw;
+    }
+
+    //TODO: do check.
+}
 
 } // namespace argparse
 
