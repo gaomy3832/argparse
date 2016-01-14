@@ -345,8 +345,8 @@ void ArgumentParser::cmdlineIs(int argc, char* argv[]) {
                     throw ArgValueException(std::string(argv[argi]) + " -> " + arg->name());
                 }
                 arg->argValueNew(argv[argi]);
-                arg->givenIs(true);
             }
+            arg->givenIs(true);
         }
     } catch (ArgKeyException& e) {
         std::cerr << "Unrecognized option or too many positional arguments: " << e.what() << std::endl;
