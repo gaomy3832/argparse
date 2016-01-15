@@ -52,6 +52,25 @@ protected:
     std::string str_;
 };
 
+class ArgPropertyException : public std::exception {
+public:
+    ArgPropertyException(const std::string& key, const std::string& property, const std::string& reason)
+        : key_(key), property_(property), reason_(reason),
+          str_(key_ + "." + property_ + ": " + reason_)
+    {
+        // Nothing else to do.
+    }
+    virtual ~ArgPropertyException() {}
+    const char* key() const throw() { return key_.c_str(); }
+    const char* property() const throw() { return property_.c_str(); }
+    const char* what() const throw() { return str_.c_str(); }
+protected:
+    std::string key_;
+    std::string property_;
+    std::string reason_;
+    std::string str_;
+};
+
 
 
 /************************
@@ -143,6 +162,19 @@ class ArgumentParser {
 protected:
     /**
      * Argument, including both the properties and the argument values.
+     *
+     * \c name: if starting with \c - or \c --, it is an option; otherwise is a positional argument.
+     *
+     * \c required: if true, must give \c expectCount arguments; otherwise use \c defaultValue to fill in.
+     *
+     * \c defaultValue: default value if none is given.
+     *
+     * \c choices: given value and \c defaultValue must be in \c choices.
+     *
+     * \c expectCount: for positional argument, it cannot be 0 or -1; for option, 0 means pure flag,
+     * -1 means any number (including 0), i.e., *.
+     *
+     * \c help: help message.
      */
     class Argument {
     public:
@@ -151,8 +183,11 @@ protected:
             : name_(name), required_(required), defaultValue_(defaultValue),
               choices_(choices.begin(), choices.end()), expectCount_(expectCount), help_(help)
         {
+            if (!isFlag(name_) && (expectCount_ == 0 || expectCount_ == -1uL)) {
+                throw ArgPropertyException(name_, "expectCount", "positional argument should not be 0 or variable length");
+            }
             if (!isChoice(defaultValue_)) {
-                throw ArgValueException(defaultValue_, "default value is not a choice for " + name_);
+                throw ArgPropertyException(name_, "defaultValue", "default value is not a choice for " + name_);
             }
         }
 
@@ -344,7 +379,7 @@ void ArgumentParser::argumentNew(const std::string& name, const bool required, c
         } else {
             positionalArgList_.push_back(ptr);
         }
-    } catch (ArgValueException& e) {
+    } catch (ArgPropertyException& e) {
         std::cerr << e.what() << std::endl;
         std::cerr << this->help() << std::endl;
         throw;
