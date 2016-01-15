@@ -75,7 +75,7 @@ public:
         // Nothing else to do.
     }
 
-    template<typename T>
+    template<typename T = std::string>
     T value() const;
 
 protected:
@@ -227,7 +227,7 @@ public:
         return arg->argValueCount();
     }
 
-    template<typename T, typename KeyT>
+    template<typename T = std::string, typename KeyT>
     const T argValue(const KeyT& key, const size_t valueIdx = 0) const {
         auto arg = argument(key);
         if (arg == nullptr) throw ArgKeyException(strKey(key));
