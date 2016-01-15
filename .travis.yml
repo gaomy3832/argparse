@@ -1,7 +1,19 @@
 language:
     - cpp
 
+compiler:
+    - g++
+
+before_install:
+    - if [ "$CXX" == "g++" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
+    - sudo apt-get update -qq
+
 install:
+    # upgrade g++ to 4.8
+    - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
+    - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8"; fi
+
+    # get gtest package from github
     - mkdir _build
     - cd _build
     - git clone https://github.com/google/googletest.git
