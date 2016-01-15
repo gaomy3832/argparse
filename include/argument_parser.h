@@ -20,45 +20,36 @@ namespace argparse {
 
 class ArgKeyException : public std::exception {
 public:
-    explicit ArgKeyException(const std::string& key) : key_(key) {}
+    ArgKeyException(const std::string& key, const std::string& reason)
+        : key_(key), reason_(reason),
+          str_(key_ + ": " + reason_)
+    {
+        // Nothing else to do.
+    }
     virtual ~ArgKeyException() {}
-    const char* what() const throw() { return key_.c_str(); }
+    const char* key() const throw() { return key_.c_str(); }
+    const char* what() const throw() { return str_.c_str(); }
 protected:
     std::string key_;
+    std::string reason_;
+    std::string str_;
 };
 
 class ArgValueException : public std::exception {
 public:
-    ArgValueException(const std::string& val, const std::string& arg)
-        : val_(val), arg_(arg)
+    ArgValueException(const std::string& val, const std::string& reason)
+        : val_(val), reason_(reason),
+          str_(val_ + ": " + reason_)
     {
         // Nothing else to do.
     }
     virtual ~ArgValueException() {}
-    const char* what() const throw() {
-        auto str = val_ + ":->:" + arg_;
-        return str.c_str();
-    }
+    const char* val() const throw() { return val_.c_str(); }
+    const char* what() const throw() { return str_.c_str(); }
 protected:
     std::string val_;
-    std::string arg_;
-};
-
-class ArgTypeException : public std::exception {
-public:
-    ArgTypeException(const std::string& val, const std::string& type)
-        : val_(val), type_(type)
-    {
-        // Nothing else to do.
-    }
-    virtual ~ArgTypeException() {}
-    const char* what() const throw() {
-        auto str = val_ + ":->:" + type_;
-        return str.c_str();
-    }
-protected:
-    std::string val_;
-    std::string type_;
+    std::string reason_;
+    std::string str_;
 };
 
 
@@ -97,9 +88,13 @@ protected:
         char* end = nullptr; errno = 0;
         auto v = strto(str_.c_str(), &end);
         if (str_.empty() || *end != '\0' || errno == ERANGE) {
-            throw ArgTypeException(str_, typeName);
+            throwConvertException(typeName);
         }
         return v;
+    }
+
+    void throwConvertException(const std::string& typeName) const {
+        throw ArgValueException(str_, "convert to " + typeName);
     }
 };
 
@@ -115,7 +110,7 @@ template<> uint64_t ArgValue::value() const {
 template<> uint32_t ArgValue::value() const {
     auto v = safeStrTo<uint64_t>(std::bind(strtoull, std::placeholders::_1, std::placeholders::_2, 10), "uint32");
     uint64_t mask = ~((1uLL << (8u*sizeof(uint32_t))) - 1); // fff..f000..0
-    if (v & mask) throw ArgTypeException(str_, "uint32_t");
+    if (v & mask) throwConvertException("uint32_t");
     return static_cast<uint32_t>(v);
 }
 
@@ -126,7 +121,7 @@ template<> int64_t ArgValue::value() const {
 template<> int32_t ArgValue::value() const {
     auto v = safeStrTo<int64_t>(std::bind(strtol, std::placeholders::_1, std::placeholders::_2, 10), "int32");
     uint64_t mask = ~((1uLL << (8u*sizeof(uint32_t)-1)) - 1);  // fff..f800..0
-    if ((v & mask) && ((~v) & mask)) throw ArgTypeException(str_, "int32");
+    if ((v & mask) && ((~v) & mask)) throwConvertException("int32");
     return static_cast<int32_t>(v);
 }
 
@@ -157,7 +152,7 @@ protected:
               choices_(choices.begin(), choices.end()), expectCount_(expectCount), help_(help)
         {
             if (!isChoice(defaultValue_)) {
-                throw ArgValueException(defaultValue_, name_);
+                throw ArgValueException(defaultValue_, "default value is not a choice for " + name_);
             }
         }
 
@@ -236,7 +231,7 @@ public:
     template<typename T = std::string, typename KeyT>
     const T argValue(const KeyT& key, const size_t valueIdx = 0) const {
         auto arg = argument(key);
-        if (arg == nullptr) throw ArgKeyException(strKey(key));
+        if (arg == nullptr) throw ArgKeyException(strKey(key), "invalid argument name");
         return arg->argValue(valueIdx).template value<T>();
     }
 
@@ -250,7 +245,7 @@ public:
 
     bool optionGiven(const std::string& key) const {
         auto arg = argument(key);
-        if (arg == nullptr) throw ArgKeyException(strKey(key));
+        if (arg == nullptr) throw ArgKeyException(strKey(key), "invalid option name");
         return arg->given();
     }
 
@@ -280,7 +275,7 @@ protected:
         if (arg->required()) {
             // Expected value count must be given for required argument.
             if (!arg->given() || arg->argValueCount() != arg->expectCount()) {
-                throw ArgKeyException(arg->name());
+                throw ArgKeyException(arg->name(), "required but not given, or too few arguments");
             }
         } else {
             if (arg->expectCount() != -1uL) {
@@ -350,7 +345,7 @@ void ArgumentParser::argumentNew(const std::string& name, const bool required, c
             positionalArgList_.push_back(ptr);
         }
     } catch (ArgValueException& e) {
-        std::cerr << "Invalid argument value: " << e.what() << std::endl;
+        std::cerr << e.what() << std::endl;
         std::cerr << this->help() << std::endl;
         throw;
     }
@@ -371,29 +366,29 @@ void ArgumentParser::cmdlineIs(int argc, char* argv[]) {
             if (isFlag(argv[argi])) {
                 std::string key = argv[argi];
                 arg = argument(key);
-                if (arg == nullptr) throw ArgKeyException(strKey(key));
+                if (arg == nullptr) throw ArgKeyException(strKey(key), "invalid option encountered");
                 argi++;
             } else {
                 arg = argument(posArgIdx);
-                if (arg == nullptr) throw ArgKeyException(strKey(posArgIdx));
+                if (arg == nullptr) throw ArgKeyException(strKey(posArgIdx), "too many positional arguments");
                 posArgIdx++;
             }
 
             for (size_t i = 0; i < arg->expectCount(); i++, argi++) {
                 if (argi >= argc || isFlag(argv[argi])) break;
                 if (!arg->isChoice(argv[argi])) {
-                    throw ArgValueException(std::string(argv[argi]), arg->name());
+                    throw ArgValueException(std::string(argv[argi]), "given value is not a choice for " + arg->name());
                 }
                 arg->argValueNew(argv[argi]);
             }
             arg->givenIs(true);
         }
     } catch (ArgKeyException& e) {
-        std::cerr << "Unrecognized option or too many positional arguments: " << e.what() << std::endl;
+        std::cerr << e.what() << std::endl;
         std::cerr << help() << std::endl;
         throw;
     } catch (ArgValueException& e) {
-        std::cerr << "Invalid argument value: " << e.what() << std::endl;
+        std::cerr << e.what() << std::endl;
         std::cerr << help() << std::endl;
         throw;
     }
@@ -407,7 +402,7 @@ void ArgumentParser::cmdlineIs(int argc, char* argv[]) {
             checkArgument(kv.second);
         }
     } catch (ArgKeyException& e) {
-        std::cerr << "Required argument is not given or too few values: " << e.what() << std::endl;
+        std::cerr << e.what() << std::endl;
         std::cerr << help() << std::endl;
         throw;
     }
