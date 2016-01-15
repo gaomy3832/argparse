@@ -10,19 +10,20 @@ before_install:
 
 install:
     # upgrade g++ to 4.8
-    - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
-    - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8"; fi
+    - if [ "$CXX" == "g++" ]; then sudo apt-get install -qq g++-4.8; fi
+    - if [ "$CXX" == "g++" ]; then export CXX="g++-4.8"; fi
 
     # get gtest package from github
     - mkdir _build
     - cd _build
-    - git clone https://github.com/google/googletest.git
-    - cd googletest/googletest
+    - wget https://github.com/google/googletest/archive/release-1.7.0.tar.gz
+    - tar zxvf release-1.7.0.tar.gz
+    - cd googletest*/
     - export GTEST_PATH=$(pwd)
     - cd make
     - make
     - cd ..
-    - cd ../..
+    - cd ..
     - cd ..
 
 script:
