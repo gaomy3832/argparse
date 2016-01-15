@@ -1,7 +1,14 @@
 #include "gtest/gtest.h"
+#include <limits>
 #include "argument_parser.h"
 
 using namespace argparse;
+
+// ASSERT_EQ for floating point types.
+template<typename T, typename = typename std::enable_if<std::is_floating_point<T>::value>::type>
+inline static void ASSERT_EQ_WithError(const T a, const T b, const T error) {
+    ASSERT_LT(std::abs(a - b), error);
+}
 
 TEST(ArgValueTest, string) {
     ArgValue av("foo");
@@ -304,6 +311,200 @@ TEST(ArgValueTest, int32Empty) {
     try {
         ArgValue av("");
         av.value<int32_t>();
+    } catch (ArgTypeException& e) {
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST(ArgValueTest, float) {
+    ArgValue av("1234");
+    ASSERT_EQ_WithError<float>(1234, av.value<float>(), 1e-6);
+    av = ArgValue("-1234");
+    ASSERT_EQ_WithError<float>(-1234, av.value<float>(), 1e-6);
+    av = ArgValue("12.34");
+    ASSERT_EQ_WithError<float>(12.34, av.value<float>(), 1e-6);
+    av = ArgValue("-12.34");
+    ASSERT_EQ_WithError<float>(-12.34, av.value<float>(), 1e-6);
+    av = ArgValue("12e34");
+    ASSERT_EQ_WithError<float>(12e34, av.value<float>(), 1e-6);
+    av = ArgValue("-12E+34");
+    ASSERT_EQ_WithError<float>(-12e34, av.value<float>(), 1e-6);
+    av = ArgValue("12e-34");
+    ASSERT_EQ_WithError<float>(12e-34, av.value<float>(), 1e-6);
+    av = ArgValue("infinity");
+    ASSERT_EQ(std::numeric_limits<float>::infinity(), av.value<float>());
+    av = ArgValue("-INF");
+    ASSERT_EQ(-std::numeric_limits<float>::infinity(), av.value<float>());
+    av = ArgValue("NAN");
+    ASSERT_TRUE(std::isnan(av.value<float>()));
+    av = ArgValue("-nan");
+    ASSERT_TRUE(std::isnan(av.value<float>()));
+}
+
+TEST(ArgValueTest, floatBadCharBefore) {
+    try {
+        ArgValue av("x123.4");
+        av.value<float>();
+    } catch (ArgTypeException& e) {
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST(ArgValueTest, floatBadCharAfter) {
+    try {
+        ArgValue av("123e4x");
+        av.value<float>();
+    } catch (ArgTypeException& e) {
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST(ArgValueTest, floatBadCharInBw) {
+    try {
+        ArgValue av("1234ex12");
+        av.value<float>();
+    } catch (ArgTypeException& e) {
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST(ArgValueTest, floatOverflow) {
+    try {
+        ArgValue av("1.18e39");
+        av.value<float>();
+    } catch (ArgTypeException& e) {
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST(ArgValueTest, floatUnderflow) {
+    try {
+        ArgValue av("-1.18e39");
+        av.value<float>();
+    } catch (ArgTypeException& e) {
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST(ArgValueTest, floatEmpty) {
+    try {
+        ArgValue av("");
+        av.value<float>();
+    } catch (ArgTypeException& e) {
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST(ArgValueTest, double) {
+    ArgValue av("1234");
+    ASSERT_EQ_WithError<double>(1234, av.value<double>(), 1e-6);
+    av = ArgValue("-1234");
+    ASSERT_EQ_WithError<double>(-1234, av.value<double>(), 1e-6);
+    av = ArgValue("12.34");
+    ASSERT_EQ_WithError<double>(12.34, av.value<double>(), 1e-6);
+    av = ArgValue("-12.34");
+    ASSERT_EQ_WithError<double>(-12.34, av.value<double>(), 1e-6);
+    av = ArgValue("12e34");
+    ASSERT_EQ_WithError<double>(12e34, av.value<double>(), 1e-6);
+    av = ArgValue("-12E+34");
+    ASSERT_EQ_WithError<double>(-12e34, av.value<double>(), 1e-6);
+    av = ArgValue("12e-34");
+    ASSERT_EQ_WithError<double>(12e-34, av.value<double>(), 1e-6);
+    av = ArgValue("infinity");
+    ASSERT_EQ(std::numeric_limits<double>::infinity(), av.value<double>());
+    av = ArgValue("-INF");
+    ASSERT_EQ(-std::numeric_limits<double>::infinity(), av.value<double>());
+    av = ArgValue("NAN");
+    ASSERT_TRUE(std::isnan(av.value<double>()));
+    av = ArgValue("-nan");
+    ASSERT_TRUE(std::isnan(av.value<double>()));
+}
+
+TEST(ArgValueTest, doubleBadCharBefore) {
+    try {
+        ArgValue av("x123.4");
+        av.value<double>();
+    } catch (ArgTypeException& e) {
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST(ArgValueTest, doubleBadCharAfter) {
+    try {
+        ArgValue av("123e4x");
+        av.value<double>();
+    } catch (ArgTypeException& e) {
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST(ArgValueTest, doubleBadCharInBw) {
+    try {
+        ArgValue av("1234ex12");
+        av.value<double>();
+    } catch (ArgTypeException& e) {
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST(ArgValueTest, doubleOverflow) {
+    try {
+        ArgValue av("1.18e309");
+        av.value<double>();
+    } catch (ArgTypeException& e) {
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST(ArgValueTest, doubleUnderflow) {
+    try {
+        ArgValue av("-1.18e309");
+        av.value<double>();
+    } catch (ArgTypeException& e) {
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST(ArgValueTest, doubleEmpty) {
+    try {
+        ArgValue av("");
+        av.value<double>();
     } catch (ArgTypeException& e) {
         return;
     }
