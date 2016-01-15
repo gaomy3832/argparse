@@ -113,7 +113,10 @@ template<> uint64_t ArgValue::value() const {
 }
 
 template<> uint32_t ArgValue::value() const {
-    return safeStrTo<uint32_t>(std::bind(strtoul, std::placeholders::_1, std::placeholders::_2, 10), "uint32");
+    auto v = safeStrTo<uint64_t>(std::bind(strtoull, std::placeholders::_1, std::placeholders::_2, 10), "uint32");
+    uint64_t mask = ~((1uLL << (8u*sizeof(uint32_t))) - 1); // fff..f000..0
+    if (v & mask) throw ArgTypeException(str_, "uint32_t");
+    return static_cast<uint32_t>(v);
 }
 
 template<> int64_t ArgValue::value() const {
@@ -121,7 +124,10 @@ template<> int64_t ArgValue::value() const {
 }
 
 template<> int32_t ArgValue::value() const {
-    return safeStrTo<int32_t>(std::bind(strtol, std::placeholders::_1, std::placeholders::_2, 10), "int32");
+    auto v = safeStrTo<int64_t>(std::bind(strtol, std::placeholders::_1, std::placeholders::_2, 10), "int32");
+    uint64_t mask = ~((1uLL << (8u*sizeof(uint32_t)-1)) - 1);  // fff..f800..0
+    if ((v & mask) && ((~v) & mask)) throw ArgTypeException(str_, "int32");
+    return static_cast<int32_t>(v);
 }
 
 template<> float ArgValue::value() const {
