@@ -1,5 +1,6 @@
 PROGS = \
 	   ArgValueTest \
+	   ArgumentParserTest \
 
 BINDIR = bin
 
