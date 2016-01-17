@@ -290,7 +290,7 @@ public:
             const std::vector<T>& choices, const std::string& help,
             const size_t expectCount, const std::initializer_list<std::string>& aliases);
 
-    void cmdlineIs(int argc, char* argv[]);
+    void cmdlineIs(int argc, const char* argv[]);
 
 protected:
     std::vector<std::shared_ptr<Argument>> positionalArgList_;
@@ -386,7 +386,7 @@ void ArgumentParser::argumentNew(const std::string& name, const bool required, c
     }
 }
 
-void ArgumentParser::cmdlineIs(int argc, char* argv[]) {
+void ArgumentParser::cmdlineIs(int argc, const char* argv[]) {
     reset();
 
     // Skip program name.
