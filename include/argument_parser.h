@@ -377,6 +377,10 @@ void ArgumentParser::argumentNew(const std::string& name, const bool required, c
                 optionMap_[a] = ptr;
             }
         } else {
+            if (!positionalArgList_.empty() && !positionalArgList_.back()->required() && ptr->required()) {
+                throw ArgPropertyException(ptr->name(), "required",
+                        "no required positional argument should be after non-required ones");
+            }
             positionalArgList_.push_back(ptr);
         }
     } catch (ArgPropertyException& e) {
