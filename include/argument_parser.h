@@ -169,7 +169,7 @@ protected:
      *
      * \c defaultValue: default value if none is given.
      *
-     * \c choices: given value and \c defaultValue must be in \c choices.
+     * \c choices: given value and \c defaultValue must be in \c choices. Empty means all values.
      *
      * \c expectCount: for positional argument, it cannot be 0 or -1; for option, 0 means pure flag,
      * -1 means any number (including 0), i.e., *.
