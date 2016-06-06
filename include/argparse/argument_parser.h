@@ -24,42 +24,40 @@ namespace argparse {
 
 class ArgKeyException : public std::exception {
 public:
-    ArgKeyException(const std::string& key, const std::string& reason)
-            : key_(key), reason_(reason),
-              str_(key_ + ": " + reason_) {
+    explicit ArgKeyException(const std::string& key,
+            const std::string& reason = "")
+            : key_(key), str_(key_ + (reason.empty() ? "" : ": "+reason)) {
         // Nothing else to do.
     }
     virtual ~ArgKeyException() {}
     const char* key() const throw() { return key_.c_str(); }
     const char* what() const throw() { return str_.c_str(); }
 protected:
-    std::string key_;
-    std::string reason_;
-    std::string str_;
+    const std::string key_;
+    const std::string str_;
 };
 
 class ArgValueException : public std::exception {
 public:
-    ArgValueException(const std::string& val, const std::string& reason)
-            : val_(val), reason_(reason),
-              str_(val_ + ": " + reason_) {
+    explicit ArgValueException(const std::string& val,
+            const std::string& reason = "")
+            : val_(val), str_(val_ + (reason.empty() ? "" : ": "+reason)) {
         // Nothing else to do.
     }
     virtual ~ArgValueException() {}
     const char* val() const throw() { return val_.c_str(); }
     const char* what() const throw() { return str_.c_str(); }
 protected:
-    std::string val_;
-    std::string reason_;
-    std::string str_;
+    const std::string val_;
+    const std::string str_;
 };
 
 class ArgPropertyException : public std::exception {
 public:
     ArgPropertyException(const std::string& key, const std::string& property,
-            const std::string& reason)
-            : key_(key), property_(property), reason_(reason),
-              str_(key_ + "." + property_ + ": " + reason_) {
+            const std::string& reason = "")
+            : key_(key), property_(property),
+              str_(key_+"."+property_ + (reason.empty() ? "" : ": "+reason)) {
         // Nothing else to do.
     }
     virtual ~ArgPropertyException() {}
@@ -67,10 +65,9 @@ public:
     const char* property() const throw() { return property_.c_str(); }
     const char* what() const throw() { return str_.c_str(); }
 protected:
-    std::string key_;
-    std::string property_;
-    std::string reason_;
-    std::string str_;
+    const std::string key_;
+    const std::string property_;
+    const std::string str_;
 };
 
 
