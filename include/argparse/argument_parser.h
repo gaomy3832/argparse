@@ -1,3 +1,7 @@
+/*
+ * Copyright 2016 Mingyu Gao
+ *
+ */
 #ifndef ARGPARSE_ARGUMENT_PARSER_H_
 #define ARGPARSE_ARGUMENT_PARSER_H_
 /**
@@ -21,9 +25,8 @@ namespace argparse {
 class ArgKeyException : public std::exception {
 public:
     ArgKeyException(const std::string& key, const std::string& reason)
-        : key_(key), reason_(reason),
-          str_(key_ + ": " + reason_)
-    {
+            : key_(key), reason_(reason),
+              str_(key_ + ": " + reason_) {
         // Nothing else to do.
     }
     virtual ~ArgKeyException() {}
@@ -38,9 +41,8 @@ protected:
 class ArgValueException : public std::exception {
 public:
     ArgValueException(const std::string& val, const std::string& reason)
-        : val_(val), reason_(reason),
-          str_(val_ + ": " + reason_)
-    {
+            : val_(val), reason_(reason),
+              str_(val_ + ": " + reason_) {
         // Nothing else to do.
     }
     virtual ~ArgValueException() {}
@@ -54,10 +56,10 @@ protected:
 
 class ArgPropertyException : public std::exception {
 public:
-    ArgPropertyException(const std::string& key, const std::string& property, const std::string& reason)
-        : key_(key), property_(property), reason_(reason),
-          str_(key_ + "." + property_ + ": " + reason_)
-    {
+    ArgPropertyException(const std::string& key, const std::string& property,
+            const std::string& reason)
+            : key_(key), property_(property), reason_(reason),
+              str_(key_ + "." + property_ + ": " + reason_) {
         // Nothing else to do.
     }
     virtual ~ArgPropertyException() {}
@@ -79,9 +81,8 @@ protected:
 
 class ArgValue {
 public:
-    ArgValue(const std::string& str)
-        : str_(str)
-    {
+    explicit ArgValue(const std::string& str)
+            : str_(str) {
         // Nothing else to do.
     }
 
@@ -103,7 +104,8 @@ protected:
      * Use strto*. See http://stackoverflow.com/a/6154614.
      */
     template<typename T>
-    inline T safeStrTo(std::function<T(const char*, char**)> strto, const char* typeName) const {
+    inline T safeStrTo(std::function<T(const char*, char**)> strto,
+            const char* typeName) const {
         char* end = nullptr; errno = 0;
         auto v = strto(str_.c_str(), &end);
         if (str_.empty() || *end != '\0' || errno == ERANGE) {
@@ -123,22 +125,26 @@ template<> std::string ArgValue::value() const {
 }
 
 template<> uint64_t ArgValue::value() const {
-    return safeStrTo<uint64_t>(std::bind(strtoull, std::placeholders::_1, std::placeholders::_2, 10), "uint64");
+    return safeStrTo<uint64_t>(std::bind(strtoull,
+                std::placeholders::_1, std::placeholders::_2, 10), "uint64");
 }
 
 template<> uint32_t ArgValue::value() const {
-    auto v = safeStrTo<uint64_t>(std::bind(strtoull, std::placeholders::_1, std::placeholders::_2, 10), "uint32");
-    uint64_t mask = ~((1uLL << (8u*sizeof(uint32_t))) - 1); // fff..f000..0
+    auto v = safeStrTo<uint64_t>(std::bind(strtoull,
+                std::placeholders::_1, std::placeholders::_2, 10), "uint32");
+    uint64_t mask = ~((1uLL << (8u*sizeof(uint32_t))) - 1);  // fff..f000..0
     if (v & mask) throwConvertException("uint32_t");
     return static_cast<uint32_t>(v);
 }
 
 template<> int64_t ArgValue::value() const {
-    return safeStrTo<int64_t>(std::bind(strtoll, std::placeholders::_1, std::placeholders::_2, 10), "int64");
+    return safeStrTo<int64_t>(std::bind(strtoll,
+                std::placeholders::_1, std::placeholders::_2, 10), "int64");
 }
 
 template<> int32_t ArgValue::value() const {
-    auto v = safeStrTo<int64_t>(std::bind(strtol, std::placeholders::_1, std::placeholders::_2, 10), "int32");
+    auto v = safeStrTo<int64_t>(std::bind(strtol,
+                std::placeholders::_1, std::placeholders::_2, 10), "int32");
     uint64_t mask = ~((1uLL << (8u*sizeof(uint32_t)-1)) - 1);  // fff..f800..0
     if ((v & mask) && ((~v) & mask)) throwConvertException("int32");
     return static_cast<int32_t>(v);
@@ -160,34 +166,42 @@ template<> double ArgValue::value() const {
 
 class ArgumentParser {
 protected:
-    /**
-     * Argument, including both the properties and the argument values.
+    /** Argument, including both the properties and the argument values.
      *
-     * \c name: if starting with \c - or \c --, it is an option; otherwise is a positional argument.
+     * \c name: if starting with \c - or \c --, it is an option; otherwise is a
+     * positional argument.
      *
-     * \c required: if true, must give \c expectCount arguments; otherwise use \c defaultValue to fill in.
+     * \c required: if true, must give \c expectCount arguments; otherwise use
+     * \c defaultValue to fill in.
      *
      * \c defaultValue: default value if none is given.
      *
-     * \c choices: given value and \c defaultValue must be in \c choices. Empty means all values.
+     * \c choices: given value and \c defaultValue must be in \c choices. Empty
+     * means all values.
      *
-     * \c expectCount: for positional argument, it cannot be 0 or -1; for option, 0 means pure flag,
-     * -1 means any number (including 0), i.e., *.
+     * \c expectCount: for positional argument, it cannot be 0 or -1; for
+     * option, 0 means pure flag, -1 means any number (including 0), i.e., *.
      *
      * \c help: help message.
      */
     class Argument {
     public:
-        Argument(const std::string& name, const bool required, const std::string& defaultValue,
-                const std::vector<std::string>& choices, const size_t expectCount, const std::string& help)
-            : name_(name), required_(required), defaultValue_(defaultValue),
-              choices_(choices.begin(), choices.end()), expectCount_(expectCount), help_(help)
-        {
+        Argument(const std::string& name, const bool required,
+                const std::string& defaultValue,
+                const std::vector<std::string>& choices,
+                const size_t expectCount, const std::string& help)
+                : name_(name), required_(required),
+                  defaultValue_(defaultValue),
+                  choices_(choices.begin(), choices.end()),
+                  expectCount_(expectCount), help_(help) {
             if (!isFlag(name_) && (expectCount_ == 0 || expectCount_ == -1uL)) {
-                throw ArgPropertyException(name_, "expectCount", "positional argument should not be 0 or variable length");
+                throw ArgPropertyException(name_, "expectCount",
+                        "positional argument should not be 0 "
+                        "or variable length");
             }
             if (!isChoice(defaultValue_)) {
-                throw ArgPropertyException(name_, "defaultValue", "default value is not a choice for " + name_);
+                throw ArgPropertyException(name_, "defaultValue",
+                        "default value is not a choice for " + name_);
             }
         }
 
@@ -208,7 +222,8 @@ protected:
         void givenIs(bool given) { given_ = given; }
 
         /**
-         * Argument value in the command line that is associated with this option.
+         * Argument value in the command line that is associated with this
+         * option.
          */
         const ArgValue argValue(const size_t idx) const {
             if (idx >= argValueList_.size()) {
@@ -245,8 +260,7 @@ protected:
 
 public:
     ArgumentParser()
-        : positionalArgList_(), optionMap_()
-    {
+            : positionalArgList_(), optionMap_() {
         // Nothing else to do.
     }
 
@@ -266,7 +280,8 @@ public:
     template<typename T = std::string, typename KeyT>
     const T argValue(const KeyT& key, const size_t valueIdx = 0) const {
         auto arg = argument(key);
-        if (arg == nullptr) throw ArgKeyException(strKey(key), "invalid argument name");
+        if (arg == nullptr)
+            throw ArgKeyException(strKey(key), "invalid argument name");
         return arg->argValue(valueIdx).template value<T>();
     }
 
@@ -280,15 +295,17 @@ public:
 
     bool optionGiven(const std::string& key) const {
         auto arg = argument(key);
-        if (arg == nullptr) throw ArgKeyException(strKey(key), "invalid option name");
+        if (arg == nullptr)
+            throw ArgKeyException(strKey(key), "invalid option name");
         return arg->given();
     }
 
 
     template<typename T>
-    void argumentNew(const std::string& name, const bool required, const T& defaultValue,
-            const std::vector<T>& choices, const std::string& help,
-            const size_t expectCount, const std::initializer_list<std::string>& aliases);
+    void argumentNew(const std::string& name, const bool required,
+            const T& defaultValue, const std::vector<T>& choices,
+            const std::string& help, const size_t expectCount,
+            const std::initializer_list<std::string>& aliases);
 
     void cmdlineIs(int argc, const char* argv[]);
 
@@ -310,12 +327,14 @@ protected:
         if (arg->required()) {
             // Expected value count must be given for required argument.
             if (!arg->given() || arg->argValueCount() != arg->expectCount()) {
-                throw ArgKeyException(arg->name(), "required but not given, or too few arguments");
+                throw ArgKeyException(arg->name(),
+                        "required but not given, or too few arguments");
             }
         } else {
             if (arg->expectCount() != -1uL) {
                 // If not required, use default values to fill in the blank.
-                for (auto idx = arg->argValueCount(); idx < arg->expectCount(); idx++) {
+                for (auto idx = arg->argValueCount(); idx < arg->expectCount();
+                        idx++) {
                     arg->argValueNew(arg->defaultValue());
                 }
             }
@@ -339,20 +358,21 @@ protected:
 
     static std::string strKey(const std::string& key) { return key; }
 
-    static std::string strKey(const size_t& idx) { return "@" + std::to_string(idx); }
+    static std::string strKey(const size_t& idx) {
+        return "@" + std::to_string(idx);
+    }
 
     static bool isFlag(const std::string& key) {
         return key.compare(0, 1, "-") == 0 || key.compare(0, 2, "--") == 0;
     }
-
 };
 
 
 template<typename T>
-void ArgumentParser::argumentNew(const std::string& name, const bool required, const T& defaultValue,
-        const std::vector<T>& choices, const std::string& help,
-        const size_t expectCount, const std::initializer_list<std::string>& aliases) {
-
+void ArgumentParser::argumentNew(const std::string& name, const bool required,
+        const T& defaultValue, const std::vector<T>& choices,
+        const std::string& help, const size_t expectCount,
+        const std::initializer_list<std::string>& aliases) {
     // Convert all types (including string and char[]) to string.
     // \c std::to_string only works for numeric types.
     auto allToString = [](const T& var) {
@@ -375,14 +395,18 @@ void ArgumentParser::argumentNew(const std::string& name, const bool required, c
             optionMap_[name] = ptr;
             for (const auto& a : aliases) {
                 if (!isFlag(a)) {
-                    throw ArgPropertyException(ptr->name(), "alias", "alias for flag must also be a flag");
+                    throw ArgPropertyException(ptr->name(), "alias",
+                            "alias for flag must also be a flag");
                 }
                 optionMap_[a] = ptr;
             }
         } else {
-            if (!positionalArgList_.empty() && !positionalArgList_.back()->required() && ptr->required()) {
+            if (!positionalArgList_.empty()
+                    && !positionalArgList_.back()->required()
+                    && ptr->required()) {
                 throw ArgPropertyException(ptr->name(), "required",
-                        "no required positional argument should be after non-required ones");
+                        "no required positional argument should be after "
+                        "non-required ones");
             }
             positionalArgList_.push_back(ptr);
         }
@@ -408,18 +432,23 @@ void ArgumentParser::cmdlineIs(int argc, const char* argv[]) {
             if (isFlag(argv[argi])) {
                 std::string key = argv[argi];
                 arg = argument(key);
-                if (arg == nullptr) throw ArgKeyException(strKey(key), "invalid option encountered");
+                if (arg == nullptr)
+                    throw ArgKeyException(strKey(key),
+                            "invalid option encountered");
                 argi++;
             } else {
                 arg = argument(posArgIdx);
-                if (arg == nullptr) throw ArgKeyException(strKey(posArgIdx), "too many positional arguments");
+                if (arg == nullptr)
+                    throw ArgKeyException(strKey(posArgIdx),
+                            "too many positional arguments");
                 posArgIdx++;
             }
 
             for (size_t i = 0; i < arg->expectCount(); i++, argi++) {
                 if (argi >= argc || isFlag(argv[argi])) break;
                 if (!arg->isChoice(argv[argi])) {
-                    throw ArgValueException(std::string(argv[argi]), "given value is not a choice for " + arg->name());
+                    throw ArgValueException(std::string(argv[argi]),
+                            "given value is not a choice for " + arg->name());
                 }
                 arg->argValueNew(argv[argi]);
             }
