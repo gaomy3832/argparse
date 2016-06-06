@@ -374,6 +374,9 @@ void ArgumentParser::argumentNew(const std::string& name, const bool required, c
         if (isFlag(name)) {
             optionMap_[name] = ptr;
             for (const auto& a : aliases) {
+                if (!isFlag(a)) {
+                    throw ArgPropertyException(ptr->name(), "alias", "alias for flag must also be a flag");
+                }
                 optionMap_[a] = ptr;
             }
         } else {
