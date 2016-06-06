@@ -1,5 +1,5 @@
-#ifndef ARGUMENT_PARSER_H_
-#define ARGUMENT_PARSER_H_
+#ifndef ARGPARSE_ARGUMENT_PARSER_H_
+#define ARGPARSE_ARGUMENT_PARSER_H_
 /**
  * A simple command line argument/option parser.
  */
@@ -450,6 +450,6 @@ void ArgumentParser::cmdlineIs(int argc, const char* argv[]) {
     }
 }
 
-} // namespace argparse
+}  // namespace argparse
 
-#endif
+#endif  // ARGPARSE_ARGUMENT_PARSER_H_
