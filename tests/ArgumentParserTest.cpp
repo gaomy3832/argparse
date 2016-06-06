@@ -104,3 +104,42 @@ TEST_F(ArgumentParserTest, posArgNonRequiredPosition) {
     ASSERT_TRUE(false);
 }
 
+TEST_F(ArgumentParserTest, posArgZeroExpectCount) {
+    try {
+        ap_->argumentNew<int>("a", true, 0, {}, "zero number", 0, {});
+    } catch (ArgPropertyException& e) {
+        ASSERT_EQ("expectCount", std::string(e.property()));
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST_F(ArgumentParserTest, posArgUnlimitedExpectCount) {
+    try {
+        ap_->argumentNew<int>("a", true, 0, {}, "any count of numbers", -1, {});
+    } catch (ArgPropertyException& e) {
+        ASSERT_EQ("expectCount", std::string(e.property()));
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST_F(ArgumentParserTest, posArgTooMany) {
+    ap_->argumentNew<int>("a", true, 0, {}, "two numbers", 2, {});
+    ap_->argumentNew<int>("b", true, 0, {}, "a number", 1, {});
+    const char* cmdline[] = {"prog", "7", "5", "3", "4"};
+    try {
+        ap_->cmdlineIs(5, cmdline);
+    } catch (ArgKeyException& e) {
+        ASSERT_EQ("@2", std::string(e.key()));
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
