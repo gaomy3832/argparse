@@ -2,3 +2,6 @@
 *.a
 *.so
 *.d
+
+doc/html/
+doc/latex/

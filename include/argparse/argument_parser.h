@@ -5,8 +5,12 @@
 #ifndef ARGPARSE_ARGUMENT_PARSER_H_
 #define ARGPARSE_ARGUMENT_PARSER_H_
 /**
+ * @file
+ *
+ * @brief
  * A simple command line argument/option parser.
  */
+
 #include <functional>
 #include <memory>
 #include <sstream>
@@ -17,11 +21,17 @@
 
 namespace argparse {
 
+/**
+ * @defgroup exceptions
+ *
+ * @brief
+ * Exception types.
+ */
+/**@{*/
 
-/***********************
- * Exception definition.
- ***********************/
-
+/**
+ * \brief Argument key exception.
+ */
 class ArgKeyException : public std::exception {
 public:
     explicit ArgKeyException(const std::string& key,
@@ -37,6 +47,9 @@ protected:
     const std::string str_;
 };
 
+/**
+ * \brief Argument value exception.
+ */
 class ArgValueException : public std::exception {
 public:
     explicit ArgValueException(const std::string& val,
@@ -52,6 +65,9 @@ protected:
     const std::string str_;
 };
 
+/**
+ * \brief Argument property exception.
+ */
 class ArgPropertyException : public std::exception {
 public:
     ArgPropertyException(const std::string& key, const std::string& property,
@@ -70,35 +86,41 @@ protected:
     const std::string str_;
 };
 
+/**@}*/
 
 
-/************************
- * Generic argument type.
- ************************/
-
+/**
+ * \brief Generic argument value type.
+ */
 class ArgValue {
 public:
+    /**
+     * \brief Construct argument value using string.
+     */
     explicit ArgValue(const std::string& str)
             : str_(str) {
         // Nothing else to do.
     }
 
+    /**
+     * \brief Safe conversion argument value to type \c T.
+     */
     template<typename T = std::string>
     T value() const;
 
 protected:
-    /**
-     * Use string as the \c any type.
-     */
+    // Use string as the \c Any type.
     std::string str_;
 
 protected:
     /**
-     * Safely convert string to type T. The whole string must be successfully
-     * converted. Also detect range exceptions.
+     * \brief Safely convert string to type \c T.
      *
-     * sto* (stoull, etc.) silently succeeds when only a prefix is converted.
-     * Use strto*. See http://stackoverflow.com/a/6154614.
+     * The whole string must be successfully converted. Also detect range
+     * exceptions.
+     *
+     * \c sto* (\c stoull, etc.) silently succeeds when only a prefix is
+     * converted.  Use \c strto*. See http://stackoverflow.com/a/6154614.
      */
     template<typename T>
     inline T safeStrTo(std::function<T(const char*, char**)> strto,
@@ -157,32 +179,19 @@ template<> double ArgValue::value() const {
 
 
 
-/******************
- * Argument parser.
- ******************/
-
+/**
+ * \brief Argument parser.
+ */
 class ArgumentParser {
 protected:
-    /** Argument, including both the properties and the argument values.
-     *
-     * \c name: if starting with \c - or \c --, it is an option; otherwise is a
-     * positional argument.
-     *
-     * \c required: if true, must give \c expectCount arguments; otherwise use
-     * \c defaultValue to fill in.
-     *
-     * \c defaultValue: default value if none is given.
-     *
-     * \c choices: given value and \c defaultValue must be in \c choices. Empty
-     * means all values.
-     *
-     * \c expectCount: for positional argument, it cannot be 0 or -1; for
-     * option, 0 means pure flag, -1 means any number (including 0), i.e., *.
-     *
-     * \c help: help message.
+    /**
+     * \brief Argument, including both the properties and the argument values.
      */
     class Argument {
     public:
+        /**
+         * \brief Construct an argument.
+         */
         Argument(const std::string& name, const bool required,
                 const std::string& defaultValue,
                 const std::vector<std::string>& choices,
@@ -213,14 +222,14 @@ protected:
         }
 
         /**
-         * Whether this option is given in the command line.
+         * \brief Whether this option is given in the command line.
          */
         bool given() const { return given_; }
         void givenIs(bool given) { given_ = given; }
 
         /**
-         * Argument value in the command line that is associated with this
-         * option.
+         * \brief Argument value in the command line that is associated with
+         * this option.
          */
         const ArgValue argValue(const size_t idx) const {
             if (idx >= argValueList_.size()) {
@@ -242,7 +251,7 @@ protected:
         }
 
     protected:
-        /* Properties. */
+        // Properties.
         std::string name_;
         bool required_;
         std::string defaultValue_;
@@ -250,7 +259,7 @@ protected:
         size_t expectCount_;
         std::string help_;
 
-        /* Argument values. */
+        // Argument values.
         bool given_;
         std::vector<ArgValue> argValueList_;
     };
@@ -265,8 +274,19 @@ public:
         return "TODO\n";
     }
 
-    /* Generic argument access. */
+    /**
+     * @name Generic argument value access.
+     */
+    /**@{*/
 
+    /**
+     * \brief Get number of values associated with the argument.
+     *
+     * @param key  the key of the argument. An integer for positional argument,
+     * and a flag string for option.
+     *
+     * @return  the number the argument values.
+     */
     template<typename KeyT>
     size_t argValueCount(const KeyT& key) const {
         auto arg = argument(key);
@@ -274,6 +294,16 @@ public:
         return arg->argValueCount();
     }
 
+    /**
+     * \brief Get a value associated with the argument.
+     *
+     * @param key  the key of the argument. An integer for positional argument,
+     * and a flag string for option.
+     * @param valueIdx  the index to the value.
+     *
+     * @return  the argument value or an empty string if \c valueIdx exceeds
+     * the number of values.
+     */
     template<typename T = std::string, typename KeyT>
     const T argValue(const KeyT& key, const size_t valueIdx = 0) const {
         auto arg = argument(key);
@@ -282,14 +312,34 @@ public:
         return arg->argValue(valueIdx).template value<T>();
     }
 
-    /* Positional argument. */
+    /**@}*/
 
+    /**
+     * @name Positional argument.
+     */
+    /**@{*/
+
+    /**
+     * \brief Number of positional arguments.
+     */
     size_t positionalArgCount() const {
         return positionalArgList_.size();
     }
 
-    /* Option/flag. */
+    /**@}*/
 
+    /**
+     * @name Option/flag.
+     */
+    /**@{*/
+
+    /**
+     * \brief Check if an option is given.
+     *
+     * @param key  a flag string for the option.
+     *
+     * @return  whether the option is given.
+     */
     bool optionGiven(const std::string& key) const {
         auto arg = argument(key);
         if (arg == nullptr)
@@ -297,13 +347,41 @@ public:
         return arg->given();
     }
 
+    /**@}*/
 
+    /**
+     * \brief Add an argument.
+     *
+     * @param name  if starting with \c - or \c --, it is an option;
+     * otherwise it is a positional argument.
+     *
+     * @param required  if true, must give \c expectCount arguments;
+     * otherwise use \c defaultValue to fill in.
+     *
+     * @param defaultValue  default value if none is given.
+     *
+     * @param choices  given value and \c defaultValue must be in \c
+     * choices. Empty means all values.
+     *
+     * @param expectCount  for positional argument, it should be positive
+     * integer; for option, 0 means pure flag, -1 means any number
+     * (including 0), i.e., *.
+     *
+     * @param help  help message.
+     *
+     * @param aliases  aliases for the option. Must also be flags.
+     */
     template<typename T>
     void argumentNew(const std::string& name, const bool required,
             const T& defaultValue, const std::vector<T>& choices,
             const std::string& help, const size_t expectCount,
             const std::initializer_list<std::string>& aliases);
 
+    /**
+     * \brief Parse a command line.
+     *
+     * @param argc, argv  the command line.
+     */
     void cmdlineIs(int argc, const char* argv[]);
 
 protected:
