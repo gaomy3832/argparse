@@ -2,6 +2,7 @@
 *.a
 *.so
 *.d
-
+tests/bin
+tests/googletest*/
 doc/html/
 doc/latex/
