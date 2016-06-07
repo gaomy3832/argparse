@@ -374,8 +374,8 @@ public:
     template<typename T>
     void argumentNew(const std::string& name, const bool required,
             const T& defaultValue, const std::vector<T>& choices,
-            const std::string& help, const size_t expectCount,
-            const std::initializer_list<std::string>& aliases);
+            const size_t expectCount, const std::string& help,
+            const std::initializer_list<std::string>& aliases = {});
 
     /**
      * \brief Parse a command line.
@@ -446,7 +446,7 @@ protected:
 template<typename T>
 void ArgumentParser::argumentNew(const std::string& name, const bool required,
         const T& defaultValue, const std::vector<T>& choices,
-        const std::string& help, const size_t expectCount,
+        const size_t expectCount, const std::string& help,
         const std::initializer_list<std::string>& aliases) {
     // Convert all types (including string and char[]) to string.
     // \c std::to_string only works for numeric types.
