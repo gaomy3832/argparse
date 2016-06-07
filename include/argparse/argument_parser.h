@@ -474,34 +474,28 @@ void ArgumentParser::argumentNew(const std::string& name,
         strChoices.push_back(allToString(c));
     }
 
-    try {
-        auto ptr = std::make_shared<Argument>(
-                name, help, expectCount, required, strDefaultValue, strChoices);
+    auto ptr = std::make_shared<Argument>(
+            name, help, expectCount, required, strDefaultValue, strChoices);
 
-        if (isFlag(name)) {
-            optionMap_[name] = ptr;
-            for (const auto& a : aliases) {
-                if (!isFlag(a)) {
-                    throw ArgPropertyException(ptr->name(), "alias",
-                            "alias for flag must also be a flag");
-                }
-                optionMap_[a] = ptr;
-                aliasMap_[a] = name;
+    if (isFlag(name)) {
+        optionMap_[name] = ptr;
+        for (const auto& a : aliases) {
+            if (!isFlag(a)) {
+                throw ArgPropertyException(ptr->name(), "alias",
+                        "alias for flag must also be a flag");
             }
-        } else {
-            if (!positionalArgList_.empty()
-                    && !positionalArgList_.back()->required()
-                    && ptr->required()) {
-                throw ArgPropertyException(ptr->name(), "required",
-                        "no required positional argument should be after "
-                        "non-required ones");
-            }
-            positionalArgList_.push_back(ptr);
+            optionMap_[a] = ptr;
+            aliasMap_[a] = name;
         }
-    } catch (ArgPropertyException& e) {
-        std::cerr << e.what() << std::endl;
-        std::cerr << this->help() << std::endl;
-        throw;
+    } else {
+        if (!positionalArgList_.empty()
+                && !positionalArgList_.back()->required()
+                && ptr->required()) {
+            throw ArgPropertyException(ptr->name(), "required",
+                    "no required positional argument should be after "
+                    "non-required ones");
+        }
+        positionalArgList_.push_back(ptr);
     }
 }
 
@@ -512,60 +506,44 @@ void ArgumentParser::cmdlineIs(int argc, const char* argv[]) {
     argc -= 1;
     argv += 1;
 
-    try {
-        int argi = 0;
-        size_t posArgIdx = 0;
-        while (argi < argc) {
-            std::shared_ptr<Argument> arg = nullptr;
-            if (isFlag(argv[argi])) {
-                std::string key = argv[argi];
-                arg = argument(key);
-                if (arg == nullptr)
-                    throw ArgKeyException(strKey(key),
-                            "invalid option encountered");
-                argi++;
-            } else {
-                arg = argument(posArgIdx);
-                if (arg == nullptr)
-                    throw ArgKeyException(strKey(posArgIdx),
-                            "too many positional arguments");
-                posArgIdx++;
-            }
-
-            for (size_t i = 0; i < arg->expectCount() && argi < argc
-                    && !isFlag(argv[argi]); i++, argi++) {
-                if (!arg->isChoice(argv[argi])) {
-                    throw ArgValueException(std::string(argv[argi]),
-                            "given value is not a choice for " + arg->name());
-                }
-                arg->argValueNew(argv[argi]);
-            }
-            arg->givenIs(true);
+    int argi = 0;
+    size_t posArgIdx = 0;
+    while (argi < argc) {
+        std::shared_ptr<Argument> arg = nullptr;
+        if (isFlag(argv[argi])) {
+            std::string key = argv[argi];
+            arg = argument(key);
+            if (arg == nullptr)
+                throw ArgKeyException(strKey(key),
+                        "invalid option encountered");
+            argi++;
+        } else {
+            arg = argument(posArgIdx);
+            if (arg == nullptr)
+                throw ArgKeyException(strKey(posArgIdx),
+                        "too many positional arguments");
+            posArgIdx++;
         }
-    } catch (ArgKeyException& e) {
-        std::cerr << e.what() << std::endl;
-        std::cerr << help() << std::endl;
-        throw;
-    } catch (ArgValueException& e) {
-        std::cerr << e.what() << std::endl;
-        std::cerr << help() << std::endl;
-        throw;
+
+        for (size_t i = 0; i < arg->expectCount() && argi < argc
+                && !isFlag(argv[argi]); i++, argi++) {
+            if (!arg->isChoice(argv[argi])) {
+                throw ArgValueException(std::string(argv[argi]),
+                        "given value is not a choice for " + arg->name());
+            }
+            arg->argValueNew(argv[argi]);
+        }
+        arg->givenIs(true);
     }
 
     // Check whether required arguments and expected value counts are given.
-    try {
-        for (auto& arg : positionalArgList_) {
-            checkArgument(arg);
+    for (auto& arg : positionalArgList_) {
+        checkArgument(arg);
+    }
+    for (auto& kv : optionMap_) {
+        if (aliasMap_.count(kv.first) == 0) {
+            checkArgument(kv.second);
         }
-        for (auto& kv : optionMap_) {
-            if (aliasMap_.count(kv.first) == 0) {
-                checkArgument(kv.second);
-            }
-        }
-    } catch (ArgKeyException& e) {
-        std::cerr << e.what() << std::endl;
-        std::cerr << help() << std::endl;
-        throw;
     }
 }
 
