@@ -192,14 +192,14 @@ protected:
         /**
          * \brief Construct an argument.
          */
-        Argument(const std::string& name, const bool required,
+        Argument(const std::string& name, const std::string& help,
+                const size_t expectCount, const bool required,
                 const std::string& defaultValue,
-                const std::vector<std::string>& choices,
-                const size_t expectCount, const std::string& help)
-                : name_(name), required_(required),
-                  defaultValue_(defaultValue),
+                const std::vector<std::string>& choices)
+                : name_(name), help_(help), expectCount_(expectCount),
+                  required_(required), defaultValue_(defaultValue),
                   choices_(choices.begin(), choices.end()),
-                  expectCount_(expectCount), help_(help) {
+                  given_(false), argValueList_() {
             if (!isFlag(name_) && (expectCount_ == 0 || expectCount_ == -1uL)) {
                 throw ArgPropertyException(name_, "expectCount",
                         "positional argument should not be 0 "
@@ -253,11 +253,11 @@ protected:
     protected:
         // Properties.
         std::string name_;
+        std::string help_;
+        size_t expectCount_;
         bool required_;
         std::string defaultValue_;
         std::unordered_set<std::string> choices_;
-        size_t expectCount_;
-        std::string help_;
 
         // Argument values.
         bool given_;
@@ -355,6 +355,12 @@ public:
      * @param name  if starting with \c - or \c --, it is an option;
      * otherwise it is a positional argument.
      *
+     * @param help  help message.
+     *
+     * @param expectCount  for positional argument, it should be positive
+     * integer; for option, 0 means pure flag, -1 means any number
+     * (including 0), i.e., *.
+     *
      * @param required  if true, must give \c expectCount arguments;
      * otherwise use \c defaultValue to fill in.
      *
@@ -363,18 +369,12 @@ public:
      * @param choices  given value and \c defaultValue must be in \c
      * choices. Empty means all values.
      *
-     * @param expectCount  for positional argument, it should be positive
-     * integer; for option, 0 means pure flag, -1 means any number
-     * (including 0), i.e., *.
-     *
-     * @param help  help message.
-     *
      * @param aliases  aliases for the option. Must also be flags.
      */
     template<typename T>
-    void argumentNew(const std::string& name, const bool required,
-            const T& defaultValue, const std::vector<T>& choices,
-            const size_t expectCount, const std::string& help,
+    void argumentNew(const std::string& name, const std::string& help,
+            const size_t expectCount, const bool required = true,
+            const T& defaultValue = T{}, const std::vector<T>& choices = {},
             const std::initializer_list<std::string>& aliases = {});
 
     /**
@@ -444,9 +444,10 @@ protected:
 
 
 template<typename T>
-void ArgumentParser::argumentNew(const std::string& name, const bool required,
+void ArgumentParser::argumentNew(const std::string& name,
+        const std::string& help,
+        const size_t expectCount, const bool required,
         const T& defaultValue, const std::vector<T>& choices,
-        const size_t expectCount, const std::string& help,
         const std::initializer_list<std::string>& aliases) {
     // Convert all types (including string and char[]) to string.
     // \c std::to_string only works for numeric types.
@@ -464,7 +465,7 @@ void ArgumentParser::argumentNew(const std::string& name, const bool required,
 
     try {
         auto ptr = std::make_shared<Argument>(
-                name, required, strDefaultValue, strChoices, expectCount, help);
+                name, help, expectCount, required, strDefaultValue, strChoices);
 
         if (isFlag(name)) {
             optionMap_[name] = ptr;

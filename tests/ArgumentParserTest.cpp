@@ -17,8 +17,8 @@ protected:
 };
 
 TEST_F(ArgumentParserTest, posArg) {
-    ap_->argumentNew<int>("a", true, 0, {}, 2, "two numbers");
-    ap_->argumentNew<int>("b", true, 0, {}, 1, "a number");
+    ap_->argumentNew<int>("a", "two numbers", 2);
+    ap_->argumentNew<int>("b", "a number", 1);
     const char* cmdline[] = {"prog", "7", "5", "3"};
     ap_->cmdlineIs(4, cmdline);
     ASSERT_EQ(2, ap_->argValueCount(0));
@@ -29,7 +29,7 @@ TEST_F(ArgumentParserTest, posArg) {
 }
 
 TEST_F(ArgumentParserTest, posArgDefault) {
-    ap_->argumentNew<int>("a", false, 9, {}, 2, "two numbers");
+    ap_->argumentNew<int>("a", "two numbers", 2, false, 9);
     const char* cmdline[] = {"prog"};
     ap_->cmdlineIs(1, cmdline);
     ASSERT_EQ(2, ap_->argValueCount(0));
@@ -38,7 +38,7 @@ TEST_F(ArgumentParserTest, posArgDefault) {
 }
 
 TEST_F(ArgumentParserTest, posArgRequiredNotGiven) {
-    ap_->argumentNew<int>("a", true, 0, {}, 1, "a number");
+    ap_->argumentNew<int>("a", "a number", 1);
     const char* cmdline[] = {"prog"};
     try {
         ap_->cmdlineIs(1, cmdline);
@@ -52,7 +52,7 @@ TEST_F(ArgumentParserTest, posArgRequiredNotGiven) {
 }
 
 TEST_F(ArgumentParserTest, posArgRequiredNotEnough) {
-    ap_->argumentNew<int>("a", true, 0, {}, 4, "four numbers");
+    ap_->argumentNew<int>("a", "four numbers", 4);
     const char* cmdline[] = {"prog", "2"};
     try {
         ap_->cmdlineIs(2, cmdline);
@@ -66,7 +66,7 @@ TEST_F(ArgumentParserTest, posArgRequiredNotEnough) {
 }
 
 TEST_F(ArgumentParserTest, posArgNotChoice) {
-    ap_->argumentNew<int>("a", true, 0, {0, 1}, 1, "a number");
+    ap_->argumentNew<int>("a", "a number", 1, true, 0, {0, 1});
     const char* cmdline[] = {"prog", "2"};
     try {
         ap_->cmdlineIs(2, cmdline);
@@ -81,7 +81,7 @@ TEST_F(ArgumentParserTest, posArgNotChoice) {
 
 TEST_F(ArgumentParserTest, posArgDefaultNotChoice) {
     try {
-        ap_->argumentNew<int>("a", false, 2, {0, 1}, 1, "a number");
+        ap_->argumentNew<int>("a", "a number", 1, false, 2, {0, 1});
     } catch (ArgPropertyException& e) {
         ASSERT_EQ("defaultValue", std::string(e.property()));
         return;
@@ -92,9 +92,9 @@ TEST_F(ArgumentParserTest, posArgDefaultNotChoice) {
 }
 
 TEST_F(ArgumentParserTest, posArgNonRequiredPosition) {
-    ap_->argumentNew<int>("a", false, 0, {}, 1, "a number");
+    ap_->argumentNew<int>("a", "a number", 1, false);
     try {
-        ap_->argumentNew<int>("b", true, 0, {}, 1, "a number");
+        ap_->argumentNew<int>("b", "a number", 1);
     } catch (ArgPropertyException& e) {
         ASSERT_EQ("required", std::string(e.property()));
         return;
@@ -106,7 +106,7 @@ TEST_F(ArgumentParserTest, posArgNonRequiredPosition) {
 
 TEST_F(ArgumentParserTest, posArgZeroExpectCount) {
     try {
-        ap_->argumentNew<int>("a", true, 0, {}, 0, "zero number");
+        ap_->argumentNew<int>("a", "zero number", 0);
     } catch (ArgPropertyException& e) {
         ASSERT_EQ("expectCount", std::string(e.property()));
         return;
@@ -118,7 +118,7 @@ TEST_F(ArgumentParserTest, posArgZeroExpectCount) {
 
 TEST_F(ArgumentParserTest, posArgUnlimitedExpectCount) {
     try {
-        ap_->argumentNew<int>("a", true, 0, {}, -1, "any count of numbers");
+        ap_->argumentNew<int>("a", "any count of numbers", -1);
     } catch (ArgPropertyException& e) {
         ASSERT_EQ("expectCount", std::string(e.property()));
         return;
@@ -129,8 +129,8 @@ TEST_F(ArgumentParserTest, posArgUnlimitedExpectCount) {
 }
 
 TEST_F(ArgumentParserTest, posArgTooMany) {
-    ap_->argumentNew<int>("a", true, 0, {}, 2, "two numbers");
-    ap_->argumentNew<int>("b", true, 0, {}, 1, "a number");
+    ap_->argumentNew<int>("a", "two numbers", 2);
+    ap_->argumentNew<int>("b", "a number", 1);
     const char* cmdline[] = {"prog", "7", "5", "3", "4"};
     try {
         ap_->cmdlineIs(5, cmdline);
