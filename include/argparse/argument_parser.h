@@ -205,6 +205,10 @@ protected:
                         "positional argument should not be 0 "
                         "or variable length");
             }
+            if (isFlag(name_) && required && expectCount_ == 0) {
+                throw ArgPropertyException(name_, "required",
+                        "pure flag should not be required");
+            }
             if (!isChoice(defaultValue_)) {
                 throw ArgPropertyException(name_, "defaultValue",
                         "default value is not a choice for " + name_);
@@ -385,7 +389,9 @@ public:
     void cmdlineIs(int argc, const char* argv[]);
 
 protected:
+    // Positional argument list.
     std::vector<std::shared_ptr<Argument>> positionalArgList_;
+    // Option name to argument.
     std::unordered_map<std::string, std::shared_ptr<Argument>> optionMap_;
 
 protected:
@@ -520,8 +526,8 @@ void ArgumentParser::cmdlineIs(int argc, const char* argv[]) {
                 posArgIdx++;
             }
 
-            for (size_t i = 0; i < arg->expectCount(); i++, argi++) {
-                if (argi >= argc || isFlag(argv[argi])) break;
+            for (size_t i = 0; i < arg->expectCount() && argi < argc
+                    && !isFlag(argv[argi]); i++, argi++) {
                 if (!arg->isChoice(argv[argi])) {
                     throw ArgValueException(std::string(argv[argi]),
                             "given value is not a choice for " + arg->name());
