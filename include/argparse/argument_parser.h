@@ -270,7 +270,7 @@ protected:
 
 public:
     ArgumentParser()
-            : positionalArgList_(), optionMap_() {
+            : positionalArgList_(), optionMap_(), aliasMap_() {
         // Nothing else to do.
     }
 
@@ -394,13 +394,18 @@ protected:
     // Option name to argument.
     std::unordered_map<std::string, std::shared_ptr<Argument>> optionMap_;
 
+    // Alias to option name.
+    std::unordered_map<std::string, std::string> aliasMap_;
+
 protected:
     void reset() {
         for (auto& pa : positionalArgList_) {
             pa->argValueDelAll();
         }
         for (auto& kv : optionMap_) {
-            kv.second->argValueDelAll();
+            if (aliasMap_.count(kv.first) == 0) {
+                kv.second->argValueDelAll();
+            }
         }
     }
 
@@ -481,6 +486,7 @@ void ArgumentParser::argumentNew(const std::string& name,
                             "alias for flag must also be a flag");
                 }
                 optionMap_[a] = ptr;
+                aliasMap_[a] = name;
             }
         } else {
             if (!positionalArgList_.empty()
@@ -552,7 +558,9 @@ void ArgumentParser::cmdlineIs(int argc, const char* argv[]) {
             checkArgument(arg);
         }
         for (auto& kv : optionMap_) {
-            checkArgument(kv.second);
+            if (aliasMap_.count(kv.first) == 0) {
+                checkArgument(kv.second);
+            }
         }
     } catch (ArgKeyException& e) {
         std::cerr << e.what() << std::endl;
