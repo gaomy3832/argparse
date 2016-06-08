@@ -1,3 +1,7 @@
+/*
+ * Copyright 2016 Mingyu Gao
+ *
+ */
 #include "gtest/gtest.h"
 #include <cmath>
 #include <limits>
