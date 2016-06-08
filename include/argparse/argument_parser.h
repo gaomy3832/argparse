@@ -366,7 +366,10 @@ public:
      * (including 0), i.e., *.
      *
      * @param required  if true, must give \c expectCount arguments;
-     * otherwise use \c defaultValue to fill in.
+     * otherwise use \c defaultValue to fill in. In case of <tt>expectCount
+     * == -1</tt>, \c required is true means at least one number needs to be
+     * provide. No \c defaultValue will be filled in in case of <tt>required
+     * == false</tt>.
      *
      * @param defaultValue  default value if none is given.
      *
@@ -412,9 +415,14 @@ protected:
     void checkArgument(const std::shared_ptr<Argument>& arg) {
         if (arg->required()) {
             // Expected value count must be given for required argument.
-            if (!arg->given() || arg->argValueCount() != arg->expectCount()) {
-                throw ArgKeyException(arg->name(),
-                        "required but not given, or too few arguments");
+            if (!arg->given()) {
+                throw ArgPropertyException(arg->name(), "required",
+                        "required but not given");
+            }
+            if (arg->expectCount() != -1uL
+                    && arg->argValueCount() != arg->expectCount()) {
+                throw ArgPropertyException(arg->name(), "expectCount",
+                        "too few arguments");
             }
         } else {
             if (arg->expectCount() != -1uL) {

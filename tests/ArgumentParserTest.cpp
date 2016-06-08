@@ -89,8 +89,9 @@ TEST_F(ArgumentParserTest, posArgRequiredNotGiven) {
     const char* cmdline[] = {"prog"};
     try {
         ap_->cmdlineIs(1, cmdline);
-    } catch (ArgKeyException& e) {
+    } catch (ArgPropertyException& e) {
         ASSERT_EQ("a", std::string(e.key()));
+        ASSERT_EQ("required", std::string(e.property()));
         return;
     }
 
@@ -103,8 +104,9 @@ TEST_F(ArgumentParserTest, posArgRequiredNotEnough) {
     const char* cmdline[] = {"prog", "2"};
     try {
         ap_->cmdlineIs(2, cmdline);
-    } catch (ArgKeyException& e) {
+    } catch (ArgPropertyException& e) {
         ASSERT_EQ("a", std::string(e.key()));
+        ASSERT_EQ("expectCount", std::string(e.property()));
         return;
     }
 
@@ -249,8 +251,9 @@ TEST_F(ArgumentParserTest, optionUnlimitedExpectCountRequiredNotGiven) {
     const char* cmdline[] = {"prog"};
     try {
         ap_->cmdlineIs(1, cmdline);
-    } catch (ArgKeyException& e) {
+    } catch (ArgPropertyException& e) {
         ASSERT_EQ("--cc", std::string(e.key()));
+        ASSERT_EQ("required", std::string(e.property()));
         return;
     }
 
@@ -271,8 +274,9 @@ TEST_F(ArgumentParserTest, optionRequiredNotGiven) {
     const char* cmdline[] = {"prog"};
     try {
         ap_->cmdlineIs(1, cmdline);
-    } catch (ArgKeyException& e) {
+    } catch (ArgPropertyException& e) {
         ASSERT_EQ("-a", std::string(e.key()));
+        ASSERT_EQ("required", std::string(e.property()));
         return;
     }
 
@@ -285,8 +289,9 @@ TEST_F(ArgumentParserTest, optionRequiredNotEnough) {
     const char* cmdline[] = {"prog", "-a", "2"};
     try {
         ap_->cmdlineIs(3, cmdline);
-    } catch (ArgKeyException& e) {
+    } catch (ArgPropertyException& e) {
         ASSERT_EQ("-a", std::string(e.key()));
+        ASSERT_EQ("expectCount", std::string(e.property()));
         return;
     }
 
