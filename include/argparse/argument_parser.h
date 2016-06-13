@@ -31,6 +31,8 @@ namespace argparse {
 
 /**
  * \brief Argument key exception.
+ *
+ * Used when the argument name is incorrect.
  */
 class ArgKeyException : public std::exception {
 public:
@@ -49,6 +51,8 @@ protected:
 
 /**
  * \brief Argument value exception.
+ *
+ * Used when the value of the argument is invalid.
  */
 class ArgValueException : public std::exception {
 public:
@@ -67,6 +71,9 @@ protected:
 
 /**
  * \brief Argument property exception.
+ *
+ * Used when the property of the argument is not correctly specified, or not
+ * satisfied when parsing.
  */
 class ArgPropertyException : public std::exception {
 public:
@@ -91,6 +98,9 @@ protected:
 
 /**
  * \brief Generic argument value type.
+ *
+ * String is used as the \c Any type. Convert to desired type lazily (i.e.,
+ * raise error at the use cite).
  */
 class ArgValue {
 public:
@@ -104,6 +114,8 @@ public:
 
     /**
      * \brief Safe conversion argument value to type \c T.
+     *
+     * Throw \c ArgValueException if conversion fails.
      */
     template<typename T = std::string>
     T value() const;
@@ -221,19 +233,21 @@ protected:
         size_t expectCount() const { return expectCount_; }
         std::string help() const { return help_; }
 
+        /**
+         * \brief Whether the \c value is a valid choice.
+         */
         bool isChoice(const std::string& value) const {
             return choices_.empty() || choices_.count(value) != 0;
         }
 
         /**
-         * \brief Whether this option is given in the command line.
+         * \brief Whether this argument is given at parse time.
          */
         bool given() const { return given_; }
         void givenIs(bool given) { given_ = given; }
 
         /**
-         * \brief Argument value in the command line that is associated with
-         * this option.
+         * \brief Get the <tt>idx</tt>-th parsed argument value.
          */
         const ArgValue argValue(const size_t idx) const {
             if (idx >= argValueList_.size()) {
@@ -242,14 +256,23 @@ protected:
             return argValueList_[idx];
         }
 
+        /**
+         * \brief Number of parsed argument values.
+         */
         size_t argValueCount() const {
             return argValueList_.size();
         }
 
+        /**
+         * \brief Add an parsed argument value \c arg.
+         */
         void argValueNew(const std::string& arg) {
             argValueList_.push_back(ArgValue(arg));
         }
 
+        /**
+         * \brief Remove all parsed argument values.
+         */
         void argValueDelAll() {
             argValueList_.clear();
         }
@@ -269,11 +292,17 @@ protected:
     };
 
 public:
+    /**
+     * \brief Initialize ArgumentParser.
+     */
     ArgumentParser()
             : positionalArgList_(), optionMap_(), aliasMap_() {
         // Nothing else to do.
     }
 
+    /**
+     * \brief Get the help message.
+     */
     const std::string help() const {
         return "TODO\n";
     }
@@ -284,12 +313,12 @@ public:
     /**@{*/
 
     /**
-     * \brief Get number of values associated with the argument.
+     * \brief Get number of parsed argument values.
      *
-     * @param key  the key of the argument. An integer for positional argument,
+     * @param key  the argument name. An integer for positional argument,
      * and a flag string for option.
      *
-     * @return  the number the argument values.
+     * @return  the number parsed argument values.
      */
     template<typename KeyT>
     size_t argValueCount(const KeyT& key) const {
@@ -299,9 +328,10 @@ public:
     }
 
     /**
-     * \brief Get a value associated with the argument.
+     * \brief Get the <tt>valueIdx</tt>-th parsed argument value for the
+     * argument with name \c key.
      *
-     * @param key  the key of the argument. An integer for positional argument,
+     * @param key  the argument name. An integer for positional argument,
      * and a flag string for option.
      * @param valueIdx  the index to the value.
      *
