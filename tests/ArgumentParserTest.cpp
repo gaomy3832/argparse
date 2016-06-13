@@ -3,9 +3,16 @@
  *
  */
 #include "gtest/gtest.h"
+#include <cmath>
 #include "argparse/argument_parser.h"
 
 using namespace argparse;
+
+// ASSERT_EQ for floating point types.
+template<typename T, typename = typename std::enable_if<std::is_floating_point<T>::value>::type>
+inline static void ASSERT_EQ_WithError(const T a, const T b, const T error) {
+    ASSERT_LT(std::abs(a - b), error);
+}
 
 class ArgumentParserTest : public ::testing::Test {
 protected:
@@ -356,6 +363,76 @@ TEST_F(ArgumentParserTest, optionAliasNotFlag) {
         ap_->argumentNew<int>("-n", "a number", 1, true, 0, {}, {"nn"});
     } catch (ArgPropertyException& e) {
         ASSERT_EQ("alias", std::string(e.property()));
+        return;
+    }
+
+    // Never reach.
+    ASSERT_TRUE(false);
+}
+
+TEST_F(ArgumentParserTest, cmdlineIs) {
+    ap_->argumentNew<int>("a", "two integers", 2);
+    ap_->argumentNew<std::string>("b", "a string", 1);
+    ap_->argumentNew<double>("-c", "a double number", 1);
+    ap_->argumentNew<uint64_t>("--dd", "an optional number", 1, false, 9);
+    ap_->argumentNew<std::string>("-f", "a flag", 0, false);
+
+    // Const argv, interleaved pos arg and options.
+    const char* cmdline1[] = {"prog", "-f", "7", "-5", "--dd", "100", "D", "-c", "-1.5"};
+    ap_->cmdlineIs(9, cmdline1);
+
+    ASSERT_EQ(2, ap_->argValueCount(0));
+    ASSERT_EQ(7, ap_->argValue<int>(0, 0));
+    ASSERT_EQ(-5, ap_->argValue<int>(0, 1));
+
+    ASSERT_EQ(1, ap_->argValueCount(1));
+    ASSERT_EQ("D", ap_->argValue(1));
+
+    ASSERT_EQ(1, ap_->argValueCount("-c"));
+    ASSERT_EQ_WithError(-1.5, ap_->argValue<double>("-c"), 1e-4);
+
+    ASSERT_TRUE(ap_->optionGiven("--dd"));
+    ASSERT_EQ(1, ap_->argValueCount("--dd"));
+    ASSERT_EQ(100, ap_->argValue<uint64_t>("--dd"));
+
+    ASSERT_TRUE(ap_->optionGiven("-f"));
+
+    // Non-const argv.
+    char argv0[] = "prog";
+    char argv1[] = "-7";
+    char argv2[] = "5";
+    char argv3[] = "B";
+    char argv4[] = "-c";
+    char argv5[] = "1.5";
+    char* cmdline2[] = {argv0, argv1, argv2, argv3, argv4, argv5};
+    ap_->cmdlineIs(6, cmdline2);
+
+    ASSERT_EQ(2, ap_->argValueCount(0));
+    ASSERT_EQ(-7, ap_->argValue<int>(0, 0));
+    ASSERT_EQ(5, ap_->argValue<int>(0, 1));
+
+    ASSERT_EQ(1, ap_->argValueCount(1));
+    ASSERT_EQ("B", ap_->argValue(1));
+
+    ASSERT_TRUE(ap_->optionGiven("-c"));
+    ASSERT_EQ(1, ap_->argValueCount("-c"));
+    ASSERT_EQ_WithError(1.5, ap_->argValue<double>("-c"), 1e-4);
+
+    ASSERT_FALSE(ap_->optionGiven("--dd"));
+
+    ASSERT_FALSE(ap_->optionGiven("-f"));
+}
+
+TEST_F(ArgumentParserTest, cmdlineIsOptionInMiddleOfPosArg) {
+    ap_->argumentNew<int>("a", "two integers", 2);
+    ap_->argumentNew<std::string>("b", "a string", 1);
+    ap_->argumentNew<std::string>("-f", "a flag", 0, false);
+    const char* cmdline1[] = {"prog", "7", "-f", "-5", "B"};
+    try {
+        ap_->cmdlineIs(4, cmdline1);
+    } catch (ArgPropertyException& e) {
+        ASSERT_EQ("a", std::string(e.key()));
+        ASSERT_EQ("expectCount", std::string(e.property()));
         return;
     }
 
