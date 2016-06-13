@@ -120,11 +120,11 @@ public:
     template<typename T = std::string>
     T value() const;
 
-protected:
+private:
     // Use string as the \c Any type.
     std::string str_;
 
-protected:
+private:
     /**
      * \brief Safely convert string to type \c T.
      *
@@ -195,7 +195,7 @@ template<> double ArgValue::value() const {
  * \brief Argument parser.
  */
 class ArgumentParser {
-protected:
+private:
     /**
      * \brief Argument, including both the properties and the argument values.
      */
@@ -277,7 +277,7 @@ protected:
             argValueList_.clear();
         }
 
-    protected:
+    private:
         // Properties.
         std::string name_;
         std::string help_;
@@ -421,7 +421,7 @@ public:
      */
     void cmdlineIs(int argc, const char* argv[]);
 
-protected:
+private:
     // Positional argument list.
     std::vector<std::shared_ptr<Argument>> positionalArgList_;
     // Option name to argument.
@@ -430,7 +430,7 @@ protected:
     // Alias to option name.
     std::unordered_map<std::string, std::string> aliasMap_;
 
-protected:
+private:
     void reset() {
         for (auto& pa : positionalArgList_) {
             pa->argValueDelAll();
