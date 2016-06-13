@@ -3,7 +3,7 @@
 
 using namespace argparse;
 
-int main(int argc, const char* argv[]) {
+int main(int argc, char* argv[]) {
     ArgumentParser ap;
 
     ap.argumentNew<std::string>(

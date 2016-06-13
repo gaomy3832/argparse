@@ -421,7 +421,13 @@ public:
      *
      * @param argc, argv  the command line.
      */
+    /**@{*/
+
     void cmdlineIs(int argc, const char* argv[]);
+
+    void cmdlineIs(int argc, char* argv[]);
+
+    /**@}*/
 
 private:
     // Positional argument list.
@@ -539,6 +545,16 @@ void ArgumentParser::argumentNew(const std::string& name,
         }
         positionalArgList_.push_back(ptr);
     }
+}
+
+void ArgumentParser::cmdlineIs(int argc, char* argv[]) {
+    const char** cargv = new const char* [argc + 1];
+    for (int idx = 0; idx < argc; idx++) {
+        cargv[idx] = argv[idx];
+    }
+    cargv[argc] = nullptr;
+    cmdlineIs(argc, cargv);
+    delete cargv;
 }
 
 void ArgumentParser::cmdlineIs(int argc, const char* argv[]) {
