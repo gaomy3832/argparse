@@ -11,6 +11,7 @@
  * A simple command line argument/option parser.
  */
 
+#include <cctype>
 #include <functional>
 #include <memory>
 #include <sstream>
@@ -386,8 +387,9 @@ public:
     /**
      * \brief Add an argument.
      *
-     * @param name  if starting with \c - or \c --, it is an option;
-     * otherwise it is a positional argument.
+     * @param name  if starting with \c - or \c -- and following by an
+     * alphabetic character, it is an option; otherwise it is a positional
+     * argument.
      *
      * @param help  help message.
      *
@@ -487,7 +489,9 @@ private:
     }
 
     static bool isFlag(const std::string& key) {
-        return key.compare(0, 1, "-") == 0 || key.compare(0, 2, "--") == 0;
+        // Flag starts with - or -- and follows by an alphabetic character.
+        return (key.compare(0, 1, "-") == 0 && isalpha(key[1]))
+                || (key.compare(0, 2, "--") == 0 && isalpha(key[2]));
     }
 };
 
