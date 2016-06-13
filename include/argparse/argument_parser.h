@@ -276,6 +276,7 @@ private:
          */
         void argValueDelAll() {
             argValueList_.clear();
+            given_ = false;
         }
 
     private:
