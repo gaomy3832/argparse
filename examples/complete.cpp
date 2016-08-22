@@ -4,7 +4,7 @@
 using namespace argparse;
 
 int main(int argc, char* argv[]) {
-    ArgumentParser ap;
+    ArgumentParser ap("A complete example of argparser.");
 
     ap.argumentNew<std::string>(
             "a",
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
     try {
         ap.cmdlineIs(argc, argv);
     } catch (...) {
-        std::cout << ap.help() << std::endl;
+        std::cout << ap.help(argv[0]) << std::endl;
     }
 
     return 0;
