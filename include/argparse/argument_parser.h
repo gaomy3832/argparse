@@ -293,6 +293,9 @@ private:
         std::vector<ArgValue> argValueList_;
     };
 
+    static constexpr size_t indent = 4;
+    static constexpr size_t maxLinewidth = 80;
+
 public:
     /**
      * \brief Initialize ArgumentParser.
@@ -536,9 +539,7 @@ private:
 
 
 const std::string ArgumentParser::help() const {
-    const size_t indent = 4;
-    const size_t maxLinewidth = 80;
-    const size_t maxIndent2 = 40;
+    const size_t maxIndent2 = maxLinewidth / 2;
 
     // Get length of longest name.
     size_t maxLength = 0;
