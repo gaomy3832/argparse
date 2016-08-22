@@ -305,9 +305,7 @@ public:
     /**
      * \brief Get the help message.
      */
-    const std::string help() const {
-        return "TODO\n";
-    }
+    const std::string help() const;
 
     /**
      * @name Generic argument value access.
@@ -500,8 +498,102 @@ private:
         return (key.compare(0, 1, "-") == 0 && isalpha(key[1]))
                 || (key.compare(0, 2, "--") == 0 && isalpha(key[2]));
     }
+
+    static std::string breakLines(const std::string str, const size_t lineLen,
+            const size_t indent) {
+        std::string fmtStr;
+        auto textLen = lineLen - indent;
+
+        std::string::size_type pos = 0;
+        while (pos < str.size()) {
+            // Add indent.
+            fmtStr += std::string(indent, ' ');
+
+            // Find break.
+            // First find explicit newline.
+            auto llen = str.substr(pos, textLen).find_first_of("\n");
+            if (llen == std::string::npos
+                    && str.size() - pos > textLen) {
+                // If no newline but still longer than a line,
+                // break at the last whitespace.
+                llen = str.substr(pos, textLen).find_last_of(" ");
+                if (llen == std::string::npos) {
+                    // This should be really rare: no whitespace!
+                    llen = str.find_first_of(" ");
+                }
+            }
+
+            fmtStr += str.substr(pos, llen);
+            fmtStr += "\n";
+            if (llen == std::string::npos) break;
+
+            // Skip all whitespaces.
+            pos = str.find_first_not_of("\n ", pos + llen);
+        }
+        return fmtStr;
+    }
 };
 
+
+const std::string ArgumentParser::help() const {
+    const size_t indent = 4;
+    const size_t maxLinewidth = 80;
+    const size_t maxIndent2 = 40;
+
+    // Get length of longest name.
+    size_t maxLength = 0;
+    for (auto& pa : positionalArgList_) {
+        maxLength = std::max(maxLength, pa->name().size());
+    }
+    for (auto& kv : optionMap_) {
+        if (aliasMap_.count(kv.first) == 0) {
+            maxLength = std::max(maxLength, kv.second->name().size());
+        }
+    }
+
+    // Indent of the help column, should be multiple of \c indent.
+    // \c indent before name column, name column is \c maxLength, and \c
+    // indent after name column.
+    size_t indent2 = (indent + maxLength + indent
+            + indent - 1) / indent * indent;
+    // If too large, shrink it.
+    indent2 = std::min(maxIndent2, indent2);
+
+    std::string str;
+
+    str += "Positional arguments:\n\n";
+    for (auto& pa : positionalArgList_) {
+        str += std::string(indent, ' ');
+        str += pa->name();
+        str += "\n";
+
+        str += breakLines(pa->help(), maxLinewidth, indent2);
+        str += "\n";
+    }
+    str += "\n";
+
+    str += "Options:\n\n";
+    for (auto& kv : optionMap_) {
+        if (aliasMap_.count(kv.first) == 0) {
+            str += std::string(indent, ' ');
+            str += kv.second->name();
+            std::vector<std::string> aliases;
+            // Figure out aliases.
+            for (auto& kv2 : aliasMap_) {
+                if (kv.first == kv2.second) {
+                    str += "," + kv2.first;
+                }
+            }
+            str += "\n";
+
+            str += breakLines(kv.second->help(), maxLinewidth, indent2);
+            str += "\n";
+        }
+    }
+    str += "\n";
+
+    return str;
+}
 
 template<typename T>
 void ArgumentParser::argumentNew(const std::string& name,
