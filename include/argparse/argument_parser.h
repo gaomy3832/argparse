@@ -306,6 +306,11 @@ public:
     }
 
     /**
+     * \brief Get the usage (short help) message.
+     */
+    const std::string usage(const std::string& binName) const;
+
+    /**
      * \brief Get the help message.
      */
     const std::string help() const;
@@ -537,6 +542,65 @@ private:
     }
 };
 
+
+const std::string ArgumentParser::usage(const std::string& binName) const {
+    std::string str;
+
+    str += binName;
+    str += " ";
+
+    // Print the meta variables.
+    auto getMetaVars = [this](const std::shared_ptr<Argument>& arg) {
+        std::string str;
+
+        // Decide the metavar.
+        std::string metavar = "X";
+        if (isFlag(arg->name())) {
+            auto pos = arg->name().find_first_not_of("-");
+            if (pos != std::string::npos) {
+                metavar = std::string(1, std::toupper(arg->name()[pos]));
+            }
+        } else {
+            metavar = arg->name();
+        }
+
+        // Print metavars according to \c expectCount.
+        if (arg->expectCount() == -1uL) {
+            str += " " + metavar + " ...";
+        } else {
+            for (size_t i = 0; i < arg->expectCount(); i++) {
+                str += ((!isFlag(arg->name()) && i == 0) ? "" : " ") + metavar;
+            }
+        }
+
+        return str;
+    };
+
+    for (auto& kv : optionMap_) {
+        if (aliasMap_.count(kv.first) == 0) {
+            auto option = kv.second;
+            if (!option->required()) str += "[";
+            str += option->name();
+            str += getMetaVars(option);
+            if (!option->required()) str += "]";
+            str += " ";
+        }
+    }
+    for (auto& pa : positionalArgList_) {
+        if (!pa->required()) str += "[";
+        str += getMetaVars(pa);
+        if (!pa->required()) str += "]";
+        str += " ";
+    }
+    str += "\n";
+
+    // Format.
+    str = breakLines(str, maxLinewidth, indent);
+
+    str = "Usage:\n" + str + "\n";
+
+    return str;
+}
 
 const std::string ArgumentParser::help() const {
     const size_t maxIndent2 = maxLinewidth / 2;
