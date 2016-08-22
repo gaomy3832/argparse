@@ -300,8 +300,9 @@ public:
     /**
      * \brief Initialize ArgumentParser.
      */
-    ArgumentParser()
-            : positionalArgList_(), optionMap_(), aliasMap_() {
+    ArgumentParser(const std::string description)
+            : description_(description),
+              positionalArgList_(), optionMap_(), aliasMap_() {
         // Nothing else to do.
     }
 
@@ -437,6 +438,9 @@ public:
     /**@}*/
 
 private:
+    // Description.
+    const std::string description_;
+
     // Positional argument list.
     std::vector<std::shared_ptr<Argument>> positionalArgList_;
     // Option name to argument.
@@ -597,7 +601,7 @@ const std::string ArgumentParser::usage(const std::string& binName) const {
     // Format.
     str = breakLines(str, maxLinewidth, indent);
 
-    str = "Usage:\n" + str + "\n";
+    str = description_ + "\n\n" + "Usage:\n" + str + "\n";
 
     return str;
 }
