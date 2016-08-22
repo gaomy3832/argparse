@@ -37,9 +37,9 @@ int main(int argc, char* argv[]) {
 
     ap.argumentNew(
             "-f",
-            "Simple flag with a very long help description that will be split"
-            "automatically into a two column format when usage is printed for"
-            "this program. Newlines will also help with justification.\nFor"
+            "Simple flag with a very long help description that will be split "
+            "automatically into a two column format when usage is printed for "
+            "this program. Newlines will also help with justification.\nFor "
             "example:\n0 - an item\n1 - another item\n2 - and another item.",
             0,
             false,
@@ -93,7 +93,11 @@ int main(int argc, char* argv[]) {
             1,
             false);
 
-    ap.cmdlineIs(argc, argv);
+    try {
+        ap.cmdlineIs(argc, argv);
+    } catch (...) {
+        std::cout << ap.help() << std::endl;
+    }
 
     return 0;
 }
