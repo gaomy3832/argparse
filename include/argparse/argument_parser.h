@@ -313,7 +313,7 @@ public:
     /**
      * \brief Get the help message.
      */
-    const std::string help() const;
+    const std::string help(const std::string& binName = "") const;
 
     /**
      * @name Generic argument value access.
@@ -602,7 +602,7 @@ const std::string ArgumentParser::usage(const std::string& binName) const {
     return str;
 }
 
-const std::string ArgumentParser::help() const {
+const std::string ArgumentParser::help(const std::string& binName) const {
     const size_t maxIndent2 = maxLinewidth / 2;
 
     // Get length of longest name.
@@ -625,6 +625,11 @@ const std::string ArgumentParser::help() const {
     indent2 = std::min(maxIndent2, indent2);
 
     std::string str;
+
+    if (binName.size() > 0) {
+        str += usage(binName);
+        str += "\n";
+    }
 
     str += "Positional arguments:\n\n";
     for (auto& pa : positionalArgList_) {
