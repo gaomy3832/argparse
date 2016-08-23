@@ -11,6 +11,7 @@
  * A simple command line argument/option parser.
  */
 
+#include <algorithm>
 #include <cctype>
 #include <functional>
 #include <memory>
@@ -300,7 +301,7 @@ public:
     /**
      * \brief Initialize ArgumentParser.
      */
-    ArgumentParser(const std::string description)
+    explicit ArgumentParser(const std::string description)
             : description_(description),
               positionalArgList_(), optionMap_(), aliasMap_() {
         // Nothing else to do.
