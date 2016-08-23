@@ -1,3 +1,7 @@
+/*
+ * Copyright 2016 Mingyu Gao
+ *
+ */
 #include <iostream>
 #include "argparse/argument_parser.h"
 
