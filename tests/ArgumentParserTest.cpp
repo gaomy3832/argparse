@@ -17,7 +17,7 @@ inline static void ASSERT_EQ_WithError(const T a, const T b, const T error) {
 class ArgumentParserTest : public ::testing::Test {
 protected:
     virtual void SetUp() {
-        ap_ = new ArgumentParser();
+        ap_ = new ArgumentParser("UnitTest");
     }
 
     virtual void TearDown() {
